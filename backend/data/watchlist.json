@@ -1,0 +1,23 @@
+{
+  "默认分组": {
+    "description": "默认分组",
+    "stocks": []
+  },
+  "股票": {
+    "description": null,
+    "stocks": [
+      "AMZN",
+      "META",
+      "GOOG",
+      "AAPL",
+      "TSLA",
+      "NVDA"
+    ]
+  },
+  "ETF": {
+    "description": null,
+    "stocks": [
+      "SPY"
+    ]
+  }
+}

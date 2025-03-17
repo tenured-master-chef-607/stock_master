@@ -1,0 +1,20 @@
+# Node.js 相关
+node_modules/
+
+# Python 相关
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+stock-monitor-env/
+backend/.env  # 重要！不应该提交环境变量文件
+
+# macOS 相关
+.DS_Store
+node_modules/
+stock-monitor-env/
+__pycache__/
+*.pyc
+*.pyo
+backend/.env # 避免提交敏感环境变量
+.DS_Store
