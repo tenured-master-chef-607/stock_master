@@ -1,8 +1,9 @@
 .App {
   text-align: center;
   padding: 20px;
-  background-color: #f0f2f5;
+  background: linear-gradient(135deg, #141414 0%, #1a1a1a 50%, #0d0d0d 100%);
   min-height: 100vh;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .App-logo {
@@ -17,15 +18,15 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background: linear-gradient(to right, #1c1c1c, #2c2c2c, #1c1c1c);
   padding: 20px;
   color: white;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .App-link {
-  color: #61dafb;
+  color: #1890ff;
 }
 
 @keyframes App-logo-spin {
@@ -49,19 +50,21 @@ h1 {
 }
 
 .stock-dashboard .ant-card {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  background: linear-gradient(145deg, #1c1c1c, #232323);
 }
 
 .controls {
-  background-color: white;
+  background: linear-gradient(135deg, #1a1a1a, #242424);
   padding: 12px;
   border-radius: 4px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .ant-layout {
   min-height: calc(100vh - 100px);
+  background: linear-gradient(135deg, #141414 0%, #1a1a1a 50%, #0d0d0d 100%);
 }
 
 .ant-layout-sider {
@@ -80,9 +83,24 @@ h1 {
 }
 
 .ant-menu-item:hover {
-  background-color: #f5f5f5;
+  background-color: #303030;
 }
 
 .ant-menu-item-selected {
-  background-color: #e6f7ff !important;
+  background-color: #177ddc !important;
+}
+
+/* Additional dark theme styles */
+.ant-table {
+  background: linear-gradient(145deg, #1c1c1c, #232323);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-input, .ant-select, .ant-btn {
+  background: linear-gradient(to bottom, #232323, #1c1c1c);
+  border-color: #434343;
+}
+
+.ant-input:hover, .ant-select:hover, .ant-btn:hover {
+  border-color: #1890ff;
 }

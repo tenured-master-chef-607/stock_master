@@ -44,13 +44,6 @@ interface WatchlistData {
   };
 }
 
-const timeframeOptions = [
-  { label: '历史', options: [
-    { value: "D", label: '日线' },
-    { value: "W", label: '周线' }
-  ]},
-];
-
 const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange }) => {
   const [note, setNote] = useState<string>("");
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -300,6 +293,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
               hide_side_toolbar={false}
               range={getChartRange()}
               timezone="America/New_York"
+              style = "3"
             />
           </div>
         </Col>
@@ -320,6 +314,33 @@ const StockDashboard: React.FC = () => {
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const [timeframe, setTimeframe] = useState<StockCardProps['timeframe']>("D");
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
+  const [siderVisible, setSiderVisible] = useState(false);
+
+  // Add a ref for the sider element to handle mouse interactions
+  const siderRef = React.useRef<HTMLDivElement>(null);
+
+  // Add handlers for mouse events
+  const handleMouseEnter = () => {
+    setSiderVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    setSiderVisible(false);
+  };
+
+  // Add click outside handler to close sider when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (siderRef.current && !siderRef.current.contains(event.target as Node)) {
+        setSiderVisible(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 添加 ref 映射来存储每个股票卡片的引用
   const stockRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -992,104 +1013,145 @@ const StockDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Calculate sider styles based on visibility
+  const siderStyle = {
+    position: 'fixed' as 'fixed',
+    left: 0,
+    top: 0,
+    height: '100vh',
+    zIndex: 1000,
+    transition: 'transform 0.3s ease',
+    transform: siderVisible ? 'translateX(0)' : 'translateX(-200px)',
+    boxShadow: siderVisible ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
+    overflow: 'hidden',
+  };
+
+  // Add a trigger tab that's always visible
+  const triggerStyle = {
+    position: 'fixed' as 'fixed',
+    left: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '20px',
+    height: '80px',
+    backgroundColor: '#fff',
+    borderRadius: '0 4px 4px 0',
+    boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+    cursor: 'pointer',
+    zIndex: 999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={220} theme="light" style={{ padding: '16px' }}>
-        <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StockSearch 
-            onSelect={(symbol) => {
-              setSelectedStock(symbol);
-              fetchWatchlist();  // 刷新观察列表
-            }} 
-            style={{ width: '100%' }}
-          />
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={() => setIsModalVisible(true)}
-              style={{ flex: 1 }}
-            >
-              新建文件夹
-            </Button>
-            <Tooltip title="刷新目录" placement="bottom">
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefreshDirectory}
-              />
-            </Tooltip>
-            <Tooltip 
-              title={expandedKeys.length === 0 ? "展开所有文件夹" : "折叠所有文件夹"}
-              placement="bottom"
-            >
-              <Button
-                onClick={() => handleExpandAll(expandedKeys.length === 0)}
-                icon={expandedKeys.length === 0 ? <ExpandOutlined /> : <CompressOutlined />}
-              />
-            </Tooltip>
-          </div>
-        </div>
-        
-        {loading ? (
-          <Spin />
-        ) : (
-          <Tree
-            treeData={treeData}
-            expandedKeys={expandedKeys}
-            selectedKeys={selectedKeys}
-            onExpand={handleExpand}
-            onSelect={(keys) => {
-              const validKeys = keys.filter(key => 
-                typeof key === 'string' && key.startsWith('stock-')
-              );
-              setSelectedKeys(validKeys);
-              
-              if (validKeys.length === 1) {
-                const symbol = (validKeys[0] as string).replace('stock-', '');
+      {/* Add the trigger tab */}
+      <div 
+        style={triggerStyle} 
+        onMouseEnter={handleMouseEnter}
+      >
+        <StockOutlined />
+      </div>
+
+      {/* Modified Sider with hover behavior */}
+      <div 
+        ref={siderRef}
+        style={siderStyle}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Sider width={220} theme="light" style={{ height: '100%', padding: '16px' }}>
+          <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <StockSearch 
+              onSelect={(symbol) => {
                 setSelectedStock(symbol);
-                scrollToStock(symbol);
-              }
-            }}
-            draggable
-            onDrop={onDrop}
-            showIcon
-          />
-        )}
+                fetchWatchlist();  // 刷新观察列表
+              }} 
+              style={{ width: '100%' }}
+            />
+            
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={() => setIsModalVisible(true)}
+                style={{ flex: 1 }}
+              >
+                新建文件夹
+              </Button>
+              <Tooltip title="刷新目录" placement="bottom">
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={handleRefreshDirectory}
+                />
+              </Tooltip>
+              <Tooltip 
+                title={expandedKeys.length === 0 ? "展开所有文件夹" : "折叠所有文件夹"}
+                placement="bottom"
+              >
+                <Button
+                  onClick={() => handleExpandAll(expandedKeys.length === 0)}
+                  icon={expandedKeys.length === 0 ? <ExpandOutlined /> : <CompressOutlined />}
+                />
+              </Tooltip>
+            </div>
+          </div>
+          
+          {loading ? (
+            <Spin />
+          ) : (
+            <Tree
+              treeData={treeData}
+              expandedKeys={expandedKeys}
+              selectedKeys={selectedKeys}
+              onExpand={handleExpand}
+              onSelect={(keys) => {
+                const validKeys = keys.filter(key => 
+                  typeof key === 'string' && key.startsWith('stock-')
+                );
+                setSelectedKeys(validKeys);
+                
+                if (validKeys.length === 1) {
+                  const symbol = (validKeys[0] as string).replace('stock-', '');
+                  setSelectedStock(symbol);
+                  scrollToStock(symbol);
+                }
+              }}
+              draggable
+              onDrop={onDrop}
+              showIcon
+            />
+          )}
+        </Sider>
+      </div>
 
-        <Modal
-          title="新建文件夹"
-          open={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
-          onOk={() => form.submit()}
-        >
-          <Form form={form} onFinish={handleAddFolder}>
-            <Form.Item
-              name="name"
-              label="名称"
-              rules={[{ required: true, message: '请输入文件夹名称' }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="description"
-              label="描述"
-            >
-              <Input />
-            </Form.Item>
-          </Form>
-        </Modal>
-      </Sider>
+      {/* Add back the Modal that was removed */}
+      <Modal
+        title="新建文件夹"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        onOk={() => form.submit()}
+      >
+        <Form form={form} onFinish={handleAddFolder}>
+          <Form.Item
+            name="name"
+            label="名称"
+            rules={[{ required: true, message: '请输入文件夹名称' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="描述"
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
 
-      <Content style={{ padding: '24px', overflowY: 'auto' }}>
-        <div style={{ marginBottom: '16px' }}>
-          <Select
-            style={{ width: 120 }}
-            value={timeframe}
-            onChange={setTimeframe}
-            options={timeframeOptions}
-          />
-        </div>
+      {/* Modified Content to use full width */}
+      <Content style={{ padding: '24px', marginLeft: 0, width: '100%', overflowY: 'auto' }}>
         
         {/* 渲染未分组股票 */}
         {getUngroupedStocks().length > 0 && (

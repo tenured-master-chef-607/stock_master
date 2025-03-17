@@ -119,6 +119,7 @@ class StockAnalyzer:
             # 生成报告
             report = {
                 "date": datetime.today().strftime('%Y-%m-%d'),
+                "open": latest['Open'],
                 "price": latest['Close'],
                 "change": daily_change,
                 "volume": latest['Volume']/1e6,
@@ -332,6 +333,7 @@ class StockAnalyzer:
                 "price": test_data['Close'].iloc[0],                
                 "high": test_data['High'].iloc[0],
                 "low": test_data['Low'].iloc[0],
+                "open": test_data['Open'].iloc[0],
                 
                 "change": ((test_data['Close'].iloc[0] - test_data['Open'].iloc[0]) / 
                         test_data['Open'].iloc[0] * 100),

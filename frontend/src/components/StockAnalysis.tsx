@@ -213,35 +213,35 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
             onClick={() => setIsBackTestModalVisible(true)}
             style={{ marginLeft: 20 }}
           >
-            回测分析
+            Back Test
           </Button>
         </Space>
 
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '100%'}}>
         <div style={{ width: '50%', paddingRight: 4 }}>
           <div style={{ textAlign: 'left' }} >
-            <h3 style={{ margin: 0, marginBottom: '4px', textAlign: 'left', marginTop: 16 }}>{symbol} 分析报告</h3>
+            <h3 style={{ margin: 0, marginBottom: '4px', textAlign: 'left', marginTop: 16 }}>{symbol} Summary</h3>
             <div style={{ color: '#666', fontSize: '12px', textAlign: 'left' }}>
-              截止至 {getUsEasternTime()} EST
+              As of {getUsEasternTime()} EST
             </div>
           </div>
           <Descriptions column={1} size="small" style={{ marginTop: 16 }}>
-            <Descriptions.Item label="当前价格">
+            <Descriptions.Item label="Current">
               ${analysis.price.toFixed(2)}
               <Tag color={analysis.change >= 0 ? 'green' : 'red'} style={{ marginLeft: 8 }}>
                 {analysis.change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                 {Math.abs(analysis.change).toFixed(2)}%
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="成交量">
+            <Descriptions.Item label="Volume">
               {analysis.volume.toFixed(1)}M
             </Descriptions.Item>
-            <Descriptions.Item label="波动预警">
+            <Descriptions.Item label="Volatility Alert">
               <Tag color={analysis.volatility_alert.includes('预警') ? 'red' : 'green'}>
                 {analysis.volatility_alert}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="资金流向">
+            <Descriptions.Item label="Money Flow">
               <Tag color={
                 analysis.money_flow.includes('流入') ? 'green' : 
                 analysis.money_flow.includes('外流') ? 'red' : 'blue'
@@ -249,72 +249,65 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
                 {analysis.money_flow}
               </Tag>
             </Descriptions.Item>
-          </Descriptions>
-
-          <div style={{ marginTop: 12 }}>
-            <h4>技术信号</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Descriptions.Item label="Technical Signals">
               {analysis.technical_signals.map((signal: string, index: number) => (
                 <Tag
                   key={index}
                   color={signal.includes('金叉') || signal.includes('超卖') ? 'green' : 
                          signal.includes('死叉') || signal.includes('超买') ? 'red' : 'blue'}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', marginRight: '5px' }}
                   onClick={() => handleSignalClick(signal)}
                 >
                   {signal}
                 </Tag>
               ))}
-            </Space>
-          </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Volume Analysis">
+              <Tag color={
+                analysis.volume_alert.includes('突破') ? 'red' :
+                analysis.volume_alert.includes('清淡') ? 'orange' : 'green'
+              }>  
+                {analysis.volume_alert}
+              </Tag>
+            </Descriptions.Item>
+          </Descriptions>
 
-          <div style={{ marginTop: 12 }}>
-            <h4>成交量分析</h4>
-            <Tag color={
-              analysis.volume_alert.includes('突破') ? 'red' :
-              analysis.volume_alert.includes('清淡') ? 'orange' : 'green'
-            }>
-              {analysis.volume_alert}
-            </Tag>
-          </div>
+
         </div>
         <div style={{ width: '50%', paddingLeft: 4 }}>
           {backTestResults && !isBackTesting && (
-            <Card 
-              title={`${backTestResults.date} 分析报告回测`} 
-              style={{ marginTop: 0, backgroundColor: '#fafafa' }}
-              bordered={false}
-            >
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="当日收盘">
-                  ${backTestResults.price?.toFixed(2)}
+            <>
+              <div style={{ textAlign: 'left' }} >
+                <h3 style={{ margin: 0, marginBottom: '4px', textAlign: 'left', marginTop: 16 }}>{backTestResults.date} Backtest</h3>
+                <div style={{ color: '#666', fontSize: '12px', textAlign: 'left' }}>
+                  Historical data analysis
+                </div>
+              </div>
+              <Descriptions column={1} size="small" style={{ marginTop: 16 }}>
+                <Descriptions.Item label="O - C">
+                  ${backTestResults.open?.toFixed(2)} - ${backTestResults.price?.toFixed(2)}
                   <Tag color={backTestResults.change >= 0 ? 'green' : 'red'} style={{ marginLeft: 8 }}>
                     {backTestResults.change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                     {Math.abs(backTestResults.change || 0).toFixed(2)}%
                   </Tag>
                 </Descriptions.Item>
 
-                <Descriptions.Item label="当日最高">
-                  ${backTestResults.high?.toFixed(2)}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="当日最低">
-                  ${backTestResults.low?.toFixed(2)}
+                <Descriptions.Item label="Range">
+                  ${backTestResults.low?.toFixed(2)} - ${backTestResults.high?.toFixed(2)}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="成交量">
+                <Descriptions.Item label="Volume">
                   {backTestResults.volume?.toFixed(1)}M
                 </Descriptions.Item>
-                
                 {backTestResults.volatility_alert && (
-                  <Descriptions.Item label="波动预警">
+                  <Descriptions.Item label="Volatility Alert">
                     <Tag color={backTestResults.volatility_alert?.includes('预警') ? 'red' : 'green'}>
                       {backTestResults.volatility_alert}
                     </Tag>
                   </Descriptions.Item>
                 )}
                 {backTestResults.money_flow && (
-                  <Descriptions.Item label="资金流向">
+                  <Descriptions.Item label="Money Flow">
                     <Tag color={
                       backTestResults.money_flow?.includes('流入') ? 'green' : 
                       backTestResults.money_flow?.includes('外流') ? 'red' : 'blue'
@@ -323,91 +316,80 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
                     </Tag>
                   </Descriptions.Item>
                 )}
-              </Descriptions>
-
-              {backTestResults.technical_signals && (
-                <div style={{ marginTop: 8 }}>
-                  <h4>技术信号</h4>
-                  <Space direction="vertical" style={{ width: '100%' }}>
+                {backTestResults.technical_signals && (
+                  <Descriptions.Item label="Technical Signals">
                     {backTestResults.technical_signals.map((signal: string, index: number) => (
-                      <Tag 
-                        key={index} 
-                        color={
-                          signal?.includes('金叉') || signal?.includes('超卖') ? 'green' : 
-                          signal?.includes('死叉') || signal?.includes('超买') ? 'red' : 'blue'
-                        } 
-                        style={{ margin: '4px 0', cursor: 'pointer' }}
+                      <Tag
+                        key={index}
+                        color={signal.includes('金叉') || signal.includes('超卖') ? 'green' : 
+                               signal.includes('死叉') || signal.includes('超买') ? 'red' : 'blue'}
+                        style={{ cursor: 'pointer', marginRight: '5px' }}
                         onClick={() => handleSignalClick(signal)}
                       >
                         {signal}
                       </Tag>
                     ))}
+                  </Descriptions.Item>
+                )}
+                {backTestResults.volume_alert && (
+                  <Descriptions.Item label="Volume Analysis">
+                    <Tag color={
+                      backTestResults.volume_alert?.includes('突破') ? 'red' :
+                      backTestResults.volume_alert?.includes('清淡') ? 'orange' : 'green'
+                    }>
+                      {backTestResults.volume_alert}
+                    </Tag>
+                  </Descriptions.Item>
+                )}
+                {backTestResults.next_day && (
+                  <Descriptions.Item label="Next Day">
+                    ${backTestResults.next_day.price?.toFixed(2)}
+                    <Tag color={backTestResults.next_day.change >= 0 ? 'green' : 'red'} style={{ marginLeft: 8 }}>
+                      {backTestResults.next_day.change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                      {Math.abs(backTestResults.next_day.change || 0).toFixed(2)}%
+                    </Tag>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+
+              {backTestResults.predictions_verified && (
+                <div style={{ marginTop: 12 }}>
+                  <h4>Prediction Verification</h4>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {backTestResults.predictions_verified.map((prediction: any, index: number) => (
+                      <div key={index} style={{ 
+                        padding: '8px', 
+                        backgroundColor: 'white', 
+                        borderRadius: '6px',
+                        marginBottom: '4px'
+                      }}>
+                        <Space style={{ width: '100%', display: 'flex', flexWrap: 'wrap' }}>
+                          <span>{prediction.signal}</span>
+                          <Tag color="blue">Prediction: {prediction.prediction}</Tag>
+                          <Tag color={prediction.correct ? 'green' : 'red'}>
+                            {prediction.correct ? 'Correct' : 'Incorrect'}
+                          </Tag>
+                        </Space>
+                      </div>
+                    ))}
                   </Space>
-                </div>
-              )}
-
-              {backTestResults.volume_alert && (
-                <div style={{ marginTop: 12 }}>
-                  <h4>成交量分析</h4>
-                  <Tag color={
-                    backTestResults.volume_alert?.includes('突破') ? 'red' :
-                    backTestResults.volume_alert?.includes('清淡') ? 'orange' : 'green'
-                  }>
-                    {backTestResults.volume_alert}
-                  </Tag>
-                </div>
-              )}
-
-              {backTestResults.next_day && (
-                <div style={{ marginTop: 12 }}>
-                  <h4>预测验证</h4>
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label="次日实际">
-                      ${backTestResults.next_day.price?.toFixed(2)}
-                      <Tag color={backTestResults.next_day.change >= 0 ? 'green' : 'red'} style={{ marginLeft: 8 }}>
-                        {backTestResults.next_day.change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                        {Math.abs(backTestResults.next_day.change || 0).toFixed(2)}%
-                      </Tag>
-                    </Descriptions.Item>
-                  </Descriptions>
                   
-                  {backTestResults.predictions_verified && (
-                    <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
-                      {backTestResults.predictions_verified.map((prediction: any, index: number) => (
-                        <div key={index} style={{ 
-                          padding: '8px', 
-                          backgroundColor: 'white', 
-                          borderRadius: '6px',
-                          marginBottom: '4px'
-                        }}>
-                          <Space style={{ width: '100%', display: 'flex', flexWrap: 'wrap' }}>
-                            <span>{prediction.signal}</span>
-                            <Tag color="blue">预测: {prediction.prediction}</Tag>
-                            <Tag color={prediction.correct ? 'green' : 'red'}>
-                              {prediction.correct ? '预测正确' : '预测错误'}
-                            </Tag>
-                          </Space>
-                        </div>
-                      ))}
-                    </Space>
-                  )}
-
                   {backTestResults.accuracy !== null && backTestResults.accuracy !== undefined && (
                     <div style={{ marginTop: 8 }}>
                       <Tag color={backTestResults.accuracy >= 60 ? 'green' : 'red'}>
-                        预测准确率: {backTestResults.accuracy.toFixed(1)}%
+                        Prediction Accuracy: {backTestResults.accuracy.toFixed(1)}%
                       </Tag>
                     </div>
                   )}
                 </div>
               )}
-            </Card>
+            </>
           )}
         </div>
       </div>
 
       <Modal
-        title="选择回测日期"
+        title="Select Backtest Date"
         open={isBackTestModalVisible}
         onOk={handleBackTest}
         onCancel={() => setIsBackTestModalVisible(false)}
@@ -418,18 +400,18 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
           onChange={handleDateChange}
           value={backTestDate}
           disabledDate={current => {
-            // 禁用今天和未来的日期
+            // Disable today and future dates
             return current && current > dayjs().endOf('day');
           }}
           allowClear={true}
-          placeholder="选择要分析的交易日"
+          placeholder="Select a trading day to analyze"
           presets={[
-            { label: '上月底', value: dayjs().subtract(1, 'month').endOf('month') },
-            { label: '三个月前', value: dayjs().subtract(3, 'month').endOf('month') },
+            { label: 'Last Month End', value: dayjs().subtract(1, 'month').endOf('month') },
+            { label: 'Three Months Ago', value: dayjs().subtract(3, 'month').endOf('month') },
           ]}
         />
         <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-          选择日期后，系统将分析该日的市场信号，并用下一个交易日的数据验证预测准确性
+          After selecting a date, the system will analyze market signals for that day and verify predictions with the next trading day's data
         </div>
       </Modal>
 

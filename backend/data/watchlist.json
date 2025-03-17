@@ -3,6 +3,13 @@
     "description": "默认分组",
     "stocks": []
   },
+  "ETF": {
+    "description": null,
+    "stocks": [
+      "SPY",
+      "QQQ"
+    ]
+  },
   "股票": {
     "description": null,
     "stocks": [
@@ -12,12 +19,6 @@
       "AAPL",
       "TSLA",
       "NVDA"
-    ]
-  },
-  "ETF": {
-    "description": null,
-    "stocks": [
-      "SPY"
     ]
   }
 }
