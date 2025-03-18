@@ -7,11 +7,12 @@
     "@types/express": "^5.0.0",
     "@types/styled-components": "^5.1.34",
     "antd": "^5.24.1",
-    "axios": "^1.7.9",
+    "axios": "^1.8.3",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "lodash": "^4.17.21",
     "react-tradingview-widget": "^1.3.2",
+    "recharts": "^2.15.1",
     "styled-components": "^6.1.15"
   },
   "devDependencies": {

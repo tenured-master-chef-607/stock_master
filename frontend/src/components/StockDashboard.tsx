@@ -67,7 +67,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (noteEditorRef.current && !noteEditorRef.current.contains(event.target as Node)) {
-        setIsEditingNote(true);  
+        setIsEditingNote(false);  // 更正为false，点击外部应该关闭编辑窗口
       }
     };
 
@@ -90,7 +90,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
           setNote(data.note);
         }
       } catch (error) {
-        console.error('获取备注失败:', error);
+        console.error('Failed to fetch note:', error);
       }
     };
     fetchNote();
@@ -112,13 +112,13 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
 
       if (response.ok) {
         setNote(newNote);
-        message.success('备注已更新');
+        message.success('Note updated');
       } else {
-        message.error('更新备注失败');
+        message.error('Failed to update note');
       }
     } catch (error) {
-      console.error('更新备注失败:', error);
-      message.error('更新备注失败');
+      console.error('Failed to update note:', error);
+      message.error('Failed to update note');
     }
   };
 
@@ -132,12 +132,6 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
   const handleNoteSave = () => {
     updateNote(editedNote);
     setIsEditingNote(false);
-  };
-
-  // 添加自动调整高度的函数
-  const autoAdjustHeight = (element: HTMLTextAreaElement) => {
-    element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
   };
 
   const getChartRange = () => {
@@ -173,13 +167,15 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
           alignItems: 'center', 
           position: 'relative',
           justifyContent: 'center',
-          minHeight: '32px'
+          minHeight: '32px',
+          color: '#e0e0e0'
         }}>
           <span style={{ 
             position: 'absolute',
             left: '50%',
             transform: 'translateX(-50%)',
-            fontWeight: 500
+            fontWeight: 500,
+            color: '#1890ff'
           }}>{symbol}</span>
           <div style={{ position: 'absolute', right: 0 }}>
             {isEditingNote ? (
@@ -188,14 +184,15 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                 style={{ 
                   position: 'fixed',
                   zIndex: 1000,
-                  background: 'white',
+                  background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
                   padding: '16px',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                   width: '400px',
                   maxWidth: '90vw',
                   transition: 'all 0.3s ease',
-                  border: '1px solid #f0f0f0',
+                  border: '1px solid #333',
+                  color: '#e0e0e0',
                   ...(calculateEditorPosition() || {})
                 }}
               >
@@ -206,10 +203,10 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span>编辑备注</span>
+                  <span>Edit Note</span>
                   <span style={{ 
                     color: '#1890ff', 
-                    backgroundColor: '#e6f7ff', 
+                    backgroundColor: 'rgba(24, 144, 255, 0.15)', 
                     padding: '2px 8px', 
                     borderRadius: '4px',
                     fontSize: '14px'
@@ -226,19 +223,21 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                     textarea.style.height = 'auto';
                     textarea.style.height = `${textarea.scrollHeight}px`;
                   }}
-                  placeholder="在此输入备注内容..."
+                  placeholder="Add note here..."
                   autoFocus
                   autoSize={{ minRows: 3 }}
                   style={{ 
                     resize: 'none',
-                    border: '1px solid #d9d9d9',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
                     borderRadius: '4px',
                     width: '100%',
                     fontSize: '14px',
                     lineHeight: '1.6',
                     padding: '8px 12px',
                     maxHeight: '60vh',
-                    overflowY: 'auto'
+                    overflowY: 'auto',
+                    color: '#e0e0e0'
                   }}
                 />
                 <div style={{ 
@@ -247,21 +246,35 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                   justifyContent: 'flex-end',
                   gap: '8px'
                 }}>
-                  <Button onClick={() => setIsEditingNote(false)}>
-                    取消
+                  <Button 
+                    onClick={() => setIsEditingNote(false)}
+                    style={{
+                      backgroundColor: '#333',
+                      borderColor: '#444',
+                      color: '#e0e0e0'
+                    }}
+                  >
+                    Cancel
                   </Button>
-                  <Button type="primary" onClick={handleNoteSave}>
-                    保存
+                  <Button 
+                    type="primary" 
+                    onClick={handleNoteSave}
+                    style={{
+                      background: 'linear-gradient(to right, #1890ff, #096dd9)',
+                      borderColor: '#096dd9'
+                    }}
+                  >
+                    Save
                   </Button>
                 </div>
               </div>
             ) : (
-              <Tooltip title={note || '点击添加备注'} placement="topRight">
+              <Tooltip title={note || 'Click to add note'} placement="topRight">
                 <div
                   onClick={handleNoteEdit}
                   style={{
                     cursor: 'pointer',
-                    color: '#666',
+                    color: '#a0a0a0',
                     fontSize: '14px',
                     maxWidth: 500,
                     overflow: 'hidden',
@@ -270,23 +283,35 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                     textAlign: 'right'
                   }}
                 >
-                  {note ? note.split('\n')[0].slice(0, 30) + (note.split('\n')[0].length > 30 ? '...' : '') : '+ 添加备注'}
+                  {note ? note.split('\n')[0].slice(0, 30) + (note.split('\n')[0].length > 30 ? '...' : '') : '+ Add note'}
                 </div>
               </Tooltip>
             )}
           </div>
         </div>
       }
-      style={{ marginBottom: 16 }}
+      style={{ 
+        marginBottom: 16,
+        background: 'linear-gradient(to bottom, #1a1a1a, #2a2a2a)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+        borderRadius: '8px',
+        border: '1px solid #333'
+      }}
       bodyStyle={{ padding: '12px' }}
+      bordered={false}
+      headStyle={{ 
+        backgroundColor: '#242424', 
+        borderBottom: '1px solid #333',
+        color: '#e0e0e0'
+      }}
     >
       <Row gutter={16}>
         <Col flex="auto">
-          <div style={{ height: 400 }}>
+          <div style={{ height: 400, borderRadius: '4px', overflow: 'hidden', border: '1px solid #333' }}>
             <AdvancedRealTimeChart
               symbol={symbol}
               interval={timeframe === "BACKTEST" ? "D" : timeframe}
-              theme="light"
+              theme="dark"
               width="100%"
               height={400}
               allow_symbol_change={true}
@@ -297,7 +322,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
             />
           </div>
         </Col>
-        <Col style={{ width: 530, maxHeight: 400, overflowY: 'auto' }} ref={analysisColRef}>
+        <Col style={{ width: 530, maxHeight: 400, overflowY: 'auto', color: '#e0e0e0' }} ref={analysisColRef}>
           <StockAnalysis symbol={symbol} />
         </Col>
       </Row>
@@ -807,7 +832,7 @@ const StockDashboard: React.FC = () => {
                 {
                   key: 'delete',
                   icon: <DeleteOutlined />,
-                  label: '删除',
+                  label: 'Delete',
                   onClick: () => handleDeleteStock(groupPath, stock)
                 }
               ]
@@ -845,17 +870,17 @@ const StockDashboard: React.FC = () => {
                 {
                   key: 'rename',
                   icon: <EditOutlined />,
-                  label: '重命名',
+                  label: 'Rename',
                   onClick: () => {
                     const currentName = groupPath.split('/').pop() || '';
                     let inputRef: any = null;
 
                     Modal.confirm({
-                      title: '重命名文件夹',
+                      title: 'Rename Folder',
                       icon: <EditOutlined />,
                       content: (
                         <Input 
-                          placeholder="请输入新名称"
+                          placeholder="Enter new name"
                           defaultValue={currentName}
                           ref={node => {
                             if (node) {
@@ -889,11 +914,11 @@ const StockDashboard: React.FC = () => {
                 {
                   key: 'delete',
                   icon: <DeleteOutlined />,
-                  label: '删除文件夹',
+                  label: 'Delete Folder',
                   onClick: () => {
                     Modal.confirm({
-                      title: '确认删除',
-                      content: '删除文件夹后，其中的股票将被移动到默认分组。确定要删除吗？',
+                      title: 'Confirm Delete',
+                      content: 'Deleting the folder will move all stocks to the default group. Are you sure you want to delete?',
                       onOk: () => handleDeleteFolder(groupPath),
                     });
                   }
@@ -931,7 +956,7 @@ const StockDashboard: React.FC = () => {
                 {
                   key: 'delete',
                   icon: <DeleteOutlined />,
-                  label: '删除',
+                  label: 'Delete',
                   onClick: () => handleDeleteStock('默认分组', stock)
                 }
               ]
@@ -1022,8 +1047,9 @@ const StockDashboard: React.FC = () => {
     zIndex: 1000,
     transition: 'transform 0.3s ease',
     transform: siderVisible ? 'translateX(0)' : 'translateX(-200px)',
-    boxShadow: siderVisible ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
+    boxShadow: siderVisible ? '2px 0 8px rgba(0,0,0,0.5)' : 'none',
     overflow: 'hidden',
+    background: 'linear-gradient(to bottom, #151515, #252525)'
   };
 
   // Add a trigger tab that's always visible
@@ -1034,18 +1060,19 @@ const StockDashboard: React.FC = () => {
     transform: 'translateY(-50%)',
     width: '20px',
     height: '80px',
-    backgroundColor: '#fff',
+    background: 'linear-gradient(to right, #151515, #252525)',
     borderRadius: '0 4px 4px 0',
-    boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+    boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
     cursor: 'pointer',
     zIndex: 999,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    color: '#e0e0e0'
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#121212' }}>
       {/* Add the trigger tab */}
       <div 
         style={triggerStyle} 
@@ -1061,7 +1088,7 @@ const StockDashboard: React.FC = () => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <Sider width={220} theme="light" style={{ height: '100%', padding: '16px' }}>
+        <Sider width={220} theme="dark" style={{ height: '100%', padding: '16px', background: 'transparent' }}>
           <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <StockSearch 
               onSelect={(symbol) => {
@@ -1076,23 +1103,37 @@ const StockDashboard: React.FC = () => {
                 type="primary" 
                 icon={<PlusOutlined />}
                 onClick={() => setIsModalVisible(true)}
-                style={{ flex: 1 }}
+                style={{ 
+                  flex: 1, 
+                  background: 'linear-gradient(to right, #1890ff, #096dd9)',
+                  borderColor: '#096dd9'
+                }}
               >
-                新建文件夹
+                New Folder
               </Button>
-              <Tooltip title="刷新目录" placement="bottom">
+              <Tooltip title="Refresh Directory" placement="bottom">
                 <Button
                   icon={<ReloadOutlined />}
+                  style={{
+                    background: '#333',
+                    borderColor: '#444',
+                    color: '#e0e0e0'
+                  }}
                   onClick={handleRefreshDirectory}
                 />
               </Tooltip>
               <Tooltip 
-                title={expandedKeys.length === 0 ? "展开所有文件夹" : "折叠所有文件夹"}
+                title={expandedKeys.length === 0 ? "Expand All Folders" : "Collapse All Folders"}
                 placement="bottom"
               >
                 <Button
                   onClick={() => handleExpandAll(expandedKeys.length === 0)}
                   icon={expandedKeys.length === 0 ? <ExpandOutlined /> : <CompressOutlined />}
+                  style={{
+                    background: '#333',
+                    borderColor: '#444',
+                    color: '#e0e0e0'
+                  }}
                 />
               </Tooltip>
             </div>
@@ -1121,6 +1162,10 @@ const StockDashboard: React.FC = () => {
               draggable
               onDrop={onDrop}
               showIcon
+              style={{
+                backgroundColor: 'transparent',
+                color: '#e0e0e0'
+              }}
             />
           )}
         </Sider>
@@ -1128,35 +1173,45 @@ const StockDashboard: React.FC = () => {
 
       {/* Add back the Modal that was removed */}
       <Modal
-        title="新建文件夹"
+        title={<span style={{ color: '#e0e0e0' }}>New Folder</span>}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
+        style={{ top: 20 }}
+        bodyStyle={{ 
+          background: '#1f1f1f',
+          color: '#e0e0e0'
+        }}
+        className="dark-theme-modal"
       >
-        <Form form={form} onFinish={handleAddFolder}>
+        <Form 
+          form={form} 
+          onFinish={handleAddFolder}
+          style={{ color: '#e0e0e0' }}
+        >
           <Form.Item
             name="name"
-            label="名称"
-            rules={[{ required: true, message: '请输入文件夹名称' }]}
+            label={<span style={{ color: '#e0e0e0' }}>Name</span>}
+            rules={[{ required: true, message: 'Please enter folder name' }]}
           >
-            <Input />
+            <Input style={{ backgroundColor: '#333', borderColor: '#444', color: '#e0e0e0' }} />
           </Form.Item>
           <Form.Item
             name="description"
-            label="描述"
+            label={<span style={{ color: '#e0e0e0' }}>Description</span>}
           >
-            <Input />
+            <Input style={{ backgroundColor: '#333', borderColor: '#444', color: '#e0e0e0' }} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Modified Content to use full width */}
-      <Content style={{ padding: '24px', marginLeft: 0, width: '100%', overflowY: 'auto' }}>
+      <Content style={{ padding: '24px', marginLeft: 0, width: '100%', overflowY: 'auto', background: '#121212' }}>
         
         {/* 渲染未分组股票 */}
         {getUngroupedStocks().length > 0 && (
           <div>
-            <h2 style={{ margin: '16px 0' }}>未分组股票</h2>
+            <h2 style={{ margin: '16px 0', color: '#e0e0e0' }}>Ungrouped Stocks</h2>
             {getUngroupedStocks().map(symbol => (
               <div 
                 key={symbol}
@@ -1202,14 +1257,14 @@ const StockDashboard: React.FC = () => {
 
             return (
               <div key={groupName}>
-                <h2 style={{ margin: '16px 0' }}>{groupName}</h2>
+                <h2 style={{ margin: '16px 0', color: '#e0e0e0' }}>{groupName}</h2>
                 {/* 渲染当前分组的股票 */}
                 {renderStockGroup(group.stocks)}
                 
                 {/* 渲染子分组的股票 */}
                 {group.subGroups && Object.entries(group.subGroups).map(([subGroupName, subGroup]) => (
                   <div key={`${groupName}-${subGroupName}`}>
-                    <h3 style={{ margin: '16px 0', paddingLeft: '20px' }}>{subGroupName}</h3>
+                    <h3 style={{ margin: '16px 0', paddingLeft: '20px', color: '#e0e0e0' }}>{subGroupName}</h3>
                     {renderStockGroup(subGroup.stocks, 20)}
                   </div>
                 ))}
