@@ -295,7 +295,8 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
         background: 'linear-gradient(to bottom, #1a1a1a, #2a2a2a)',
         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         borderRadius: '8px',
-        border: '1px solid #333'
+        border: '1px solid #333',
+        marginLeft: timeframe === "BACKTEST" ? '10px' : 0
       }}
       bodyStyle={{ padding: '12px' }}
       bordered={false}
@@ -340,6 +341,13 @@ const StockDashboard: React.FC = () => {
   const [timeframe, setTimeframe] = useState<StockCardProps['timeframe']>("D");
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [siderVisible, setSiderVisible] = useState(false);
+  // Add state for rename and delete folder prompts
+  const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [newFolderName, setNewFolderName] = useState<string>('');
+  const renameModalRef = React.useRef<HTMLDivElement>(null);
+  const deleteModalRef = React.useRef<HTMLDivElement>(null);
 
   // Add a ref for the sider element to handle mouse interactions
   const siderRef = React.useRef<HTMLDivElement>(null);
@@ -817,6 +825,40 @@ const StockDashboard: React.FC = () => {
     }
   };
 
+  // Add click outside handler for rename and delete modals
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (renameModalRef.current && !renameModalRef.current.contains(event.target as Node)) {
+        setIsRenameModalVisible(false);
+      }
+      if (deleteModalRef.current && !deleteModalRef.current.contains(event.target as Node)) {
+        setIsDeleteModalVisible(false);
+      }
+    };
+
+    if (isRenameModalVisible || isDeleteModalVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isRenameModalVisible, isDeleteModalVisible]);
+
+  // Handle rename folder submit
+  const handleRenameSubmit = () => {
+    if (newFolderName.trim()) {
+      handleRenameFolder(selectedFolder, newFolderName.trim());
+      setIsRenameModalVisible(false);
+    }
+  };
+
+  // Handle delete folder confirm
+  const handleDeleteConfirm = () => {
+    handleDeleteFolder(selectedFolder);
+    setIsDeleteModalVisible(false);
+  };
+
   // 修改 generateTreeData 函数
   const generateTreeData = (group: StockGroup, groupPath: string): DataNode => {
     const stockNodes: DataNode[] = group.stocks.map((stock: string) => ({
@@ -873,42 +915,9 @@ const StockDashboard: React.FC = () => {
                   label: 'Rename',
                   onClick: () => {
                     const currentName = groupPath.split('/').pop() || '';
-                    let inputRef: any = null;
-
-                    Modal.confirm({
-                      title: 'Rename Folder',
-                      icon: <EditOutlined />,
-                      content: (
-                        <Input 
-                          placeholder="Enter new name"
-                          defaultValue={currentName}
-                          ref={node => {
-                            if (node) {
-                              inputRef = node;
-                              setTimeout(() => node.select(), 100);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const value = inputRef.input.value.trim();
-                              if (value) {
-                                handleRenameFolder(groupPath, value);
-                                Modal.destroyAll();
-                              }
-                            }
-                          }}
-                        />
-                      ),
-                      async onOk() {
-                        const value = inputRef.input.value.trim();
-                        if (value) {
-                          await handleRenameFolder(groupPath, value);
-                        }
-                      },
-                      okButtonProps: {
-                        disabled: false
-                      }
-                    });
+                    setSelectedFolder(groupPath);
+                    setNewFolderName(currentName);
+                    setIsRenameModalVisible(true);
                   }
                 },
                 {
@@ -916,11 +925,8 @@ const StockDashboard: React.FC = () => {
                   icon: <DeleteOutlined />,
                   label: 'Delete Folder',
                   onClick: () => {
-                    Modal.confirm({
-                      title: 'Confirm Delete',
-                      content: 'Deleting the folder will move all stocks to the default group. Are you sure you want to delete?',
-                      onOk: () => handleDeleteFolder(groupPath),
-                    });
+                    setSelectedFolder(groupPath);
+                    setIsDeleteModalVisible(true);
                   }
                 }
               ]
@@ -1046,7 +1052,7 @@ const StockDashboard: React.FC = () => {
     height: '100vh',
     zIndex: 1000,
     transition: 'transform 0.3s ease',
-    transform: siderVisible ? 'translateX(0)' : 'translateX(-200px)',
+    transform: siderVisible ? 'translateX(0)' : 'translateX(-400px)',
     boxShadow: siderVisible ? '2px 0 8px rgba(0,0,0,0.5)' : 'none',
     overflow: 'hidden',
     background: 'linear-gradient(to bottom, #151515, #252525)'
@@ -1073,6 +1079,171 @@ const StockDashboard: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#121212' }}>
+      {/* Add the Rename Folder custom modal */}
+      {isRenameModalVisible && (
+        <div 
+          ref={renameModalRef}
+          style={{ 
+            position: 'fixed',
+            zIndex: 1000,
+            background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            width: '400px',
+            maxWidth: '90vw',
+            transition: 'all 0.3s ease',
+            border: '1px solid #333',
+            color: '#e0e0e0',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div style={{ 
+            marginBottom: '12px', 
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <EditOutlined style={{ color: '#1890ff' }} />
+            <span>Rename Folder</span>
+            <span style={{ 
+              color: '#1890ff', 
+              backgroundColor: 'rgba(24, 144, 255, 0.15)', 
+              padding: '2px 8px', 
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              {selectedFolder.split('/').pop()}
+            </span>
+          </div>
+          <Input
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            placeholder="Enter new name"
+            autoFocus
+            style={{ 
+              resize: 'none',
+              backgroundColor: '#222',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              width: '100%',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              padding: '8px 12px',
+              color: '#e0e0e0'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleRenameSubmit();
+              }
+            }}
+          />
+          <div style={{ 
+            marginTop: '12px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '8px'
+          }}>
+            <Button 
+              onClick={() => setIsRenameModalVisible(false)}
+              style={{
+                backgroundColor: '#333',
+                borderColor: '#444',
+                color: '#e0e0e0'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="primary" 
+              onClick={handleRenameSubmit}
+              style={{
+                background: 'linear-gradient(to right, #1890ff, #096dd9)',
+                borderColor: '#096dd9'
+              }}
+            >
+              Rename
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Add the Delete Folder custom modal */}
+      {isDeleteModalVisible && (
+        <div 
+          ref={deleteModalRef}
+          style={{ 
+            position: 'fixed',
+            zIndex: 1000,
+            background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            width: '400px',
+            maxWidth: '90vw',
+            transition: 'all 0.3s ease',
+            border: '1px solid #333',
+            color: '#e0e0e0',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div style={{ 
+            marginBottom: '12px', 
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <DeleteOutlined style={{ color: '#ff4d4f' }} />
+            <span>Delete Folder</span>
+            <span style={{ 
+              color: '#ff4d4f', 
+              backgroundColor: 'rgba(255, 77, 79, 0.15)', 
+              padding: '2px 8px', 
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              {selectedFolder.split('/').pop()}
+            </span>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            Deleting the folder will move all stocks to the default group. Are you sure you want to delete?
+          </div>
+          <div style={{ 
+            marginTop: '12px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '8px'
+          }}>
+            <Button 
+              onClick={() => setIsDeleteModalVisible(false)}
+              style={{
+                backgroundColor: '#333',
+                borderColor: '#444',
+                color: '#e0e0e0'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              danger
+              onClick={handleDeleteConfirm}
+              style={{
+                background: 'linear-gradient(to right, #ff4d4f, #cf1322)',
+                borderColor: '#cf1322'
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Add the trigger tab */}
       <div 
         style={triggerStyle} 
@@ -1088,7 +1259,7 @@ const StockDashboard: React.FC = () => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <Sider width={220} theme="dark" style={{ height: '100%', padding: '16px', background: 'transparent' }}>
+        <Sider width={400} theme="dark" style={{ height: '100%', padding: '16px', background: 'transparent' }}>
           <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <StockSearch 
               onSelect={(symbol) => {
@@ -1180,9 +1351,26 @@ const StockDashboard: React.FC = () => {
         style={{ top: 20 }}
         bodyStyle={{ 
           background: '#1f1f1f',
-          color: '#e0e0e0'
+          color: '#e0e0e0',
+          padding: '16px'
         }}
+        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
         className="dark-theme-modal"
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(to right, #1890ff, #096dd9)',
+            borderColor: '#096dd9'
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            background: '#333',
+            borderColor: '#444',
+            color: '#e0e0e0'
+          }
+        }}
+        okText="Create"
+        cancelText="Cancel"
       >
         <Form 
           form={form} 

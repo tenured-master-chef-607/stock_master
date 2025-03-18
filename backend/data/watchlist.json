@@ -10,15 +10,22 @@
       "QQQ"
     ]
   },
-  "股票": {
+  "Stocks": {
     "description": null,
     "stocks": [
-      "AMZN",
       "META",
       "GOOG",
       "AAPL",
       "TSLA",
-      "NVDA"
+      "NVDA",
+      "AMZN"
     ]
+  },
+  "Default Group": {
+    "description": "Default Group",
+    "stocks": [
+      "XIACY"
+    ],
+    "subGroups": {}
   }
 }
