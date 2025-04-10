@@ -1,35 +1,52 @@
-from flask import Flask, request
+from flask import Flask
 from flask_cors import CORS
-from routes.stock import stock_bp
 import logging
+from routes.stock import stock_bp
+from routes.watchlist import watchlist_bp
+from routes.analysis import analysis_bp
+import os
+from dotenv import load_dotenv
 
-# 配置日志
-logging.basicConfig(level=logging.DEBUG)
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG if os.getenv("FLASK_ENV") == "development" else logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+def create_app():
+    """Create and configure the Flask application"""
+    app = Flask(__name__)
 
-# 简化 CORS 配置
-CORS(app, 
-     origins=["http://localhost:3000"],
-     supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "Accept"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+    # Configure CORS
+    CORS(app, 
+        origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization", "Accept"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
 
-# 注册蓝图
-app.register_blueprint(stock_bp, url_prefix='/api')
+    # Register blueprints
+    app.register_blueprint(stock_bp, url_prefix='/api/stock')
+    app.register_blueprint(watchlist_bp, url_prefix='/api/watchlist')
+    app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
 
-@app.before_request
-def before_request():
-    logger.info(f"Received request: {request.method} {request.url}")
-    logger.info(f"Headers: {dict(request.headers)}")
+    # Root endpoint
+    @app.route("/", methods=["GET"])
+    def root():
+        return {"message": "Stock Master API", "version": "1.0.0"}
 
-@app.after_request
-def after_request(response):
-    logger.info(f"Response status: {response.status}")
-    # 移除之前的 CORS 头部设置，让 flask-cors 处理
-    return response
+    return app
+
+# Create the application instance
+app = create_app()
 
 if __name__ == '__main__':
-    logger.info("Starting Flask server on http://localhost:8002")
-    app.run(host='0.0.0.0', port=8002, debug=True) 
+    port = int(os.getenv('PORT', 8002))
+    debug = os.getenv('FLASK_ENV') == 'development'
+    
+    logger.info(f"Starting Flask server on http://localhost:{port}")
+    app.run(host='0.0.0.0', port=port, debug=debug) 

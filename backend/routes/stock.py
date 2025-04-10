@@ -2,6 +2,11 @@ from flask import Blueprint, jsonify, request
 from flask_cors import cross_origin
 import json
 import os
+import logging
+import yfinance as yf
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 stock_bp = Blueprint('stock', __name__)
 
@@ -41,6 +46,34 @@ def save_watchlist(watchlist):
 
 STOCK_DATABASE = load_stock_data()
 
+# Load notes data
+def load_notes():
+    try:
+        data_dir = Path(os.path.dirname(os.path.dirname(__file__))) / 'data'
+        notes_file = data_dir / 'stock_notes.json'
+        
+        if not notes_file.exists():
+            return {}
+            
+        with open(notes_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading notes: {str(e)}")
+        return {}
+
+# Save notes data
+def save_notes(notes):
+    try:
+        data_dir = Path(os.path.dirname(os.path.dirname(__file__))) / 'data'
+        data_dir.mkdir(exist_ok=True)
+        notes_file = data_dir / 'stock_notes.json'
+        
+        with open(notes_file, 'w', encoding='utf-8') as f:
+            json.dump(notes, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving notes: {str(e)}")
+        return False
 
 @stock_bp.route('/watchlist/add', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -106,56 +139,139 @@ def add_to_watchlist():
         print(f"添加股票时发生错误: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@stock_bp.route('/stock/search/<query>', methods=['GET'])
-@cross_origin(supports_credentials=True)
+@stock_bp.route('/search/<query>', methods=['GET'])
 def search_stock(query):
+    """Search for stocks by symbol or name"""
     try:
-        print(f"Received search query: {query}")
+        logger.info(f"Searching for stock: {query}")
         
-        # 过滤匹配的股票
+        # Use Yahoo Finance API for real-time search results
+        search_url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
+        
+        import requests
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(search_url, headers=headers)
+        data = response.json()
+        
+        # Format results
         results = []
-        query = query.upper().strip()
-        
-        # 首先尝试精确匹配
-        if query in STOCK_DATABASE:
-            info = STOCK_DATABASE[query]
-            results.append({
-                "ticker": query,
-                "name": info['name'],
-                "exchange": info['exchange']
-            })
-            return jsonify(results)
-        
-        # 如果没有精确匹配，尝试部分匹配
-        for ticker, info in STOCK_DATABASE.items():
-            # 匹配 ticker
-            if query in ticker:
+        for item in data.get('quotes', [])[:10]:
+            if item.get('quoteType') in ['EQUITY', 'ETF', 'CRYPTOCURRENCY']:
                 results.append({
-                    "ticker": ticker,
-                    "name": info['name'],
-                    "exchange": info['exchange']
+                    'symbol': item.get('symbol'),
+                    'name': item.get('longname') or item.get('shortname'),
+                    'exchange': item.get('exchange')
                 })
-                continue
-            
-            # 匹配公司名称（不区分大小写）
-            if query.lower() in info['name'].lower():
-                results.append({
-                    "ticker": ticker,
-                    "name": info['name'],
-                    "exchange": info['exchange']
-                })
-        
-        # 按照 ticker 长度排序，优先显示更短的 ticker
-        results.sort(key=lambda x: len(x['ticker']))
-        
-        # 限制返回结果数量
-        results = results[:10]
-        
-        print(f"Returning results: {results}")
+                
         return jsonify(results)
-        
     except Exception as e:
-        print(f"Search error: {str(e)}")
+        logger.error(f"Error searching for stock: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@stock_bp.route('/validate/<symbol>', methods=['GET'])
+def validate_stock(symbol):
+    """Validate if a stock symbol exists"""
+    try:
+        logger.info(f"Validating stock symbol: {symbol}")
+        
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period='1d')
+        
+        if hist.empty:
+            return jsonify({"valid": False, "error": "Unable to get stock data"})
+            
+        info = ticker.info
+        return jsonify({
+            "valid": True,
+            "name": info.get('longName', '') or info.get('shortName', ''),
+            "price": hist['Close'][-1] if not hist.empty else 0
+        })
+    except Exception as e:
+        logger.error(f"Error validating stock: {str(e)}")
+        return jsonify({"valid": False, "error": str(e)})
+
+@stock_bp.route('/note/<symbol>', methods=['GET'])
+def get_stock_note(symbol):
+    """Get the note for a specific stock"""
+    try:
+        logger.info(f"Getting note for stock: {symbol}")
+        
+        # Load notes
+        notes = load_notes()
+        
+        # Return note if it exists, empty string otherwise
+        return jsonify({
+            "symbol": symbol,
+            "note": notes.get(symbol, "")
+        })
+    except Exception as e:
+        logger.error(f"Error getting note for stock {symbol}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@stock_bp.route('/note', methods=['POST'])
+def update_stock_note():
+    """Update the note for a stock"""
+    try:
+        data = request.json
+        symbol = data.get('symbol')
+        note = data.get('note', '')
+        
+        if not symbol:
+            return jsonify({"error": "Symbol is required"}), 400
+            
+        logger.info(f"Updating note for stock: {symbol}")
+        
+        # Load current notes
+        notes = load_notes()
+        
+        # Update note
+        notes[symbol] = note
+        
+        # Save notes
+        if save_notes(notes):
+            return jsonify({
+                "success": True,
+                "message": f"Updated note for {symbol}",
+                "symbol": symbol,
+                "note": note
+            })
+        else:
+            return jsonify({"error": "Failed to save note"}), 500
+    except Exception as e:
+        logger.error(f"Error updating note: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@stock_bp.route('/info/<symbol>', methods=['GET'])
+def get_stock_info(symbol):
+    """Get basic information about a stock"""
+    try:
+        logger.info(f"Getting info for stock: {symbol}")
+        
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        
+        # Extract key information
+        return jsonify({
+            "symbol": symbol,
+            "name": info.get('longName', '') or info.get('shortName', ''),
+            "sector": info.get('sector', ''),
+            "industry": info.get('industry', ''),
+            "country": info.get('country', ''),
+            "website": info.get('website', ''),
+            "summary": info.get('longBusinessSummary', ''),
+            "logo": info.get('logo_url', ''),
+            "market_cap": info.get('marketCap', 0),
+            "pe_ratio": info.get('trailingPE', 0),
+            "dividend_yield": info.get('dividendYield', 0),
+            "price": info.get('currentPrice', 0),
+            "price_change": info.get('regularMarketChangePercent', 0),
+            "volume": info.get('regularMarketVolume', 0)
+        })
+    except Exception as e:
+        logger.error(f"Error getting stock info for {symbol}: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @stock_bp.route('/delete', methods=['DELETE'])

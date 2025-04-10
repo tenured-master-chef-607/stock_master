@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Spin, message, Layout, Menu, Input, Button, Modal, Form, Dropdown, Space, notification, Badge, AutoComplete, DatePicker, Tree, Tooltip } from 'antd';
+import { Card, Row, Col, Spin, message, Layout, Input, Button, Modal, Form, Dropdown, Badge, AutoComplete, DatePicker, Tree, Tooltip } from 'antd';
 import { PlusOutlined, DeleteOutlined, FolderOutlined, MoreOutlined, AlertOutlined, StockOutlined, ExpandOutlined, CompressOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import { AdvancedRealTimeChart } from 'react-ts-tradingview-widgets';
-import type { CardProps } from 'antd';
 import StockAnalysis from './StockAnalysis';
 import dayjs from 'dayjs';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import type { DataNode, TreeProps, EventDataNode } from 'antd/es/tree';
 import type { Key } from 'rc-tree/lib/interface';
-import type { MenuProps } from 'antd';
 import { StockSearch } from './StockSearch';
+import { ThemeContext } from '../App';
 
 const { Sider, Content } = Layout;
 const { Search, TextArea } = Input;
@@ -50,6 +49,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
   const [editedNote, setEditedNote] = useState<string>("");
   const noteEditorRef = React.useRef<HTMLDivElement>(null);
   const analysisColRef = React.useRef<HTMLDivElement>(null);
+  const { darkMode } = React.useContext(ThemeContext);
 
   // 计算编辑窗口位置的函数
   const calculateEditorPosition = () => {
@@ -161,21 +161,27 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
 
   return (
     <Card 
+      className="stock-card"
       title={
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
           position: 'relative',
           justifyContent: 'center',
-          minHeight: '32px',
-          color: '#e0e0e0'
+          minHeight: '32px'
         }}>
           <span style={{ 
             position: 'absolute',
             left: '50%',
             transform: 'translateX(-50%)',
             fontWeight: 500,
-            color: '#1890ff'
+            color: 'var(--primary-color)',
+            fontSize: '16px',
+            padding: '4px 12px',
+            borderRadius: '12px',
+            background: darkMode ? 'rgba(24, 144, 255, 0.1)' : 'rgba(24, 144, 255, 0.08)',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+            transition: 'all 0.3s ease'
           }}>{symbol}</span>
           <div style={{ position: 'absolute', right: 0 }}>
             {isEditingNote ? (
@@ -184,15 +190,17 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                 style={{ 
                   position: 'fixed',
                   zIndex: 1000,
-                  background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
+                  background: darkMode 
+                    ? 'linear-gradient(to bottom, var(--bg-secondary), var(--bg-elevated))' 
+                    : 'var(--bg-secondary)',
                   padding: '16px',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px var(--shadow-color)',
                   width: '400px',
                   maxWidth: '90vw',
                   transition: 'all 0.3s ease',
-                  border: '1px solid #333',
-                  color: '#e0e0e0',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
                   ...(calculateEditorPosition() || {})
                 }}
               >
@@ -205,8 +213,8 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                 }}>
                   <span>Edit Note</span>
                   <span style={{ 
-                    color: '#1890ff', 
-                    backgroundColor: 'rgba(24, 144, 255, 0.15)', 
+                    color: 'var(--primary-color)', 
+                    backgroundColor: 'var(--highlight-bg)', 
                     padding: '2px 8px', 
                     borderRadius: '4px',
                     fontSize: '14px'
@@ -228,16 +236,11 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                   autoSize={{ minRows: 3 }}
                   style={{ 
                     resize: 'none',
-                    backgroundColor: '#222',
-                    border: '1px solid #444',
-                    borderRadius: '4px',
-                    width: '100%',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    padding: '8px 12px',
                     maxHeight: '60vh',
                     overflowY: 'auto',
-                    color: '#e0e0e0'
+                    borderRadius: '8px',
+                    backgroundColor: darkMode ? 'var(--bg-elevated)' : 'var(--bg-primary)',
+                    transition: 'all 0.3s ease'
                   }}
                 />
                 <div style={{ 
@@ -248,10 +251,9 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                 }}>
                   <Button 
                     onClick={() => setIsEditingNote(false)}
+                    size="middle"
                     style={{
-                      backgroundColor: '#333',
-                      borderColor: '#444',
-                      color: '#e0e0e0'
+                      borderRadius: '6px'
                     }}
                   >
                     Cancel
@@ -259,9 +261,9 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                   <Button 
                     type="primary" 
                     onClick={handleNoteSave}
+                    size="middle"
                     style={{
-                      background: 'linear-gradient(to right, #1890ff, #096dd9)',
-                      borderColor: '#096dd9'
+                      borderRadius: '6px'
                     }}
                   >
                     Save
@@ -274,13 +276,17 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
                   onClick={handleNoteEdit}
                   style={{
                     cursor: 'pointer',
-                    color: '#a0a0a0',
+                    color: note ? 'var(--text-secondary)' : 'var(--primary-color)',
                     fontSize: '14px',
                     maxWidth: 500,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    textAlign: 'right'
+                    textAlign: 'right',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: note ? (darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)') : 'transparent'
                   }}
                 >
                   {note ? note.split('\n')[0].slice(0, 30) + (note.split('\n')[0].length > 30 ? '...' : '') : '+ Add note'}
@@ -292,27 +298,18 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
       }
       style={{ 
         marginBottom: 16,
-        background: 'linear-gradient(to bottom, #1a1a1a, #2a2a2a)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-        borderRadius: '8px',
-        border: '1px solid #333',
         marginLeft: timeframe === "BACKTEST" ? '10px' : 0
       }}
       bodyStyle={{ padding: '12px' }}
       bordered={false}
-      headStyle={{ 
-        backgroundColor: '#242424', 
-        borderBottom: '1px solid #333',
-        color: '#e0e0e0'
-      }}
     >
       <Row gutter={16}>
         <Col flex="auto">
-          <div style={{ height: 400, borderRadius: '4px', overflow: 'hidden', border: '1px solid #333' }}>
+          <div className="tradingview-chart-container" style={{ height: 400 }}>
             <AdvancedRealTimeChart
               symbol={symbol}
               interval={timeframe === "BACKTEST" ? "D" : timeframe}
-              theme="dark"
+              theme={darkMode ? "dark" : "light"}
               width="100%"
               height={400}
               allow_symbol_change={true}
@@ -323,7 +320,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
             />
           </div>
         </Col>
-        <Col style={{ width: 530, maxHeight: 400, overflowY: 'auto', color: '#e0e0e0' }} ref={analysisColRef}>
+        <Col style={{ width: 530, maxHeight: 400, overflowY: 'auto' }} ref={analysisColRef}>
           <StockAnalysis symbol={symbol} />
         </Col>
       </Row>
@@ -341,6 +338,7 @@ const StockDashboard: React.FC = () => {
   const [timeframe, setTimeframe] = useState<StockCardProps['timeframe']>("D");
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [siderVisible, setSiderVisible] = useState(false);
+  const [siderPinned, setSiderPinned] = useState(false);
   // Add state for rename and delete folder prompts
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -348,24 +346,37 @@ const StockDashboard: React.FC = () => {
   const [newFolderName, setNewFolderName] = useState<string>('');
   const renameModalRef = React.useRef<HTMLDivElement>(null);
   const deleteModalRef = React.useRef<HTMLDivElement>(null);
+  const { darkMode } = React.useContext(ThemeContext);
 
   // Add a ref for the sider element to handle mouse interactions
   const siderRef = React.useRef<HTMLDivElement>(null);
 
   // Add handlers for mouse events
   const handleMouseEnter = () => {
-    setSiderVisible(true);
+    if (!siderPinned) {
+      setSiderVisible(true);
+    }
   };
 
   const handleMouseLeave = () => {
-    setSiderVisible(false);
+    if (!siderPinned) {
+      setSiderVisible(false);
+    }
+  };
+
+  // Toggle pinned state
+  const toggleSiderPin = () => {
+    setSiderPinned(!siderPinned);
+    setSiderVisible(true); // Ensure sidebar is visible when pinning
   };
 
   // Add click outside handler to close sider when clicking elsewhere
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (siderRef.current && !siderRef.current.contains(event.target as Node)) {
-        setSiderVisible(false);
+        if (!siderPinned) {
+          setSiderVisible(false);
+        }
       }
     };
 
@@ -373,7 +384,7 @@ const StockDashboard: React.FC = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [siderPinned]);
 
   // 添加 ref 映射来存储每个股票卡片的引用
   const stockRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -390,7 +401,7 @@ const StockDashboard: React.FC = () => {
   };
 
   // 获取观察列表
-  const fetchWatchlist = async () => {
+  const fetchWatchlist = React.useCallback(async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist`);
       if (!response.ok) {
@@ -416,11 +427,11 @@ const StockDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     fetchWatchlist();
-  }, []);
+  }, [fetchWatchlist]);
 
   // 获取所有唯一的股票
   const getAllStocks = () => {
@@ -772,7 +783,7 @@ const StockDashboard: React.FC = () => {
       nativeEvent: MouseEvent;
     }
   ) => {
-    setExpandedKeys(expandedKeys.map(key => String(key)));
+    setExpandedKeys(expandedKeys as string[]);
   };
 
   // 修改删除文件夹的处理函数
@@ -861,88 +872,84 @@ const StockDashboard: React.FC = () => {
 
   // 修改 generateTreeData 函数
   const generateTreeData = (group: StockGroup, groupPath: string): DataNode => {
+    // Stock nodes - simplified
     const stockNodes: DataNode[] = group.stocks.map((stock: string) => ({
       title: (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <StockOutlined />
-            <span>{stock}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '2px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <StockOutlined style={{ fontSize: '14px', color: 'var(--primary-color)' }} />
+            <span style={{ fontSize: '14px' }}>{stock}</span>
           </div>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'delete',
-                  icon: <DeleteOutlined />,
-                  label: 'Delete',
-                  onClick: () => handleDeleteStock(groupPath, stock)
-                }
-              ]
+          <DeleteOutlined 
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleDeleteStock(groupPath, stock);
             }}
-            trigger={['click']}
-          >
-            <MoreOutlined
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              style={{ cursor: 'pointer' }}
-            />
-          </Dropdown>
+            style={{ 
+              fontSize: '14px', 
+              color: 'var(--text-tertiary)', 
+              cursor: 'pointer',
+              opacity: 0.6
+            }}
+            className="tree-action-icon"
+          />
         </div>
       ),
       key: `stock-${stock}`,
       isLeaf: true,
     }));
 
-    // 创建子文件夹节点
+    // 创建子文件夹节点 - simplified
     const subGroupNodes: DataNode[] = group.subGroups ? 
       Object.entries(group.subGroups).map(([subName, subGroup]) =>
         generateTreeData(subGroup, `${groupPath}/${subName}`)
       ) : [];
 
-    // 返回当前文件夹节点
+    // 返回当前文件夹节点 - simplified
     return {
       title: (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FolderOutlined />
-            <span>{groupPath.split('/').pop()}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '3px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FolderOutlined style={{ fontSize: '16px', color: 'var(--warning-color)' }} />
+            <span style={{ fontWeight: 500, fontSize: '14px' }}>{groupPath.split('/').pop()}</span>
           </div>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'rename',
-                  icon: <EditOutlined />,
-                  label: 'Rename',
-                  onClick: () => {
-                    const currentName = groupPath.split('/').pop() || '';
-                    setSelectedFolder(groupPath);
-                    setNewFolderName(currentName);
-                    setIsRenameModalVisible(true);
-                  }
-                },
-                {
-                  key: 'delete',
-                  icon: <DeleteOutlined />,
-                  label: 'Delete Folder',
-                  onClick: () => {
-                    setSelectedFolder(groupPath);
-                    setIsDeleteModalVisible(true);
-                  }
-                }
-              ]
-            }}
-            trigger={['click']}
-          >
-            <MoreOutlined
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              style={{ cursor: 'pointer' }}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <EditOutlined
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                const currentName = groupPath.split('/').pop() || '';
+                setSelectedFolder(groupPath);
+                setNewFolderName(currentName);
+                setIsRenameModalVisible(true);
+              }}
+              style={{ 
+                fontSize: '14px', 
+                color: 'var(--text-tertiary)', 
+                cursor: 'pointer',
+                opacity: 0.6
+              }}
+              className="tree-action-icon"
             />
-          </Dropdown>
+            <DeleteOutlined 
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setSelectedFolder(groupPath);
+                setIsDeleteModalVisible(true);
+              }}
+              style={{ 
+                fontSize: '14px', 
+                color: 'var(--text-tertiary)', 
+                cursor: 'pointer',
+                opacity: 0.6
+              }}
+              className="tree-action-icon"
+            />
+          </div>
         </div>
       ),
       key: `folder-${groupPath}`,
       children: [...stockNodes, ...subGroupNodes],
-      selectable: false
+      selectable: false,
     };
   };
 
@@ -1044,126 +1051,306 @@ const StockDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate sider styles based on visibility
-  const siderStyle = {
-    position: 'fixed' as 'fixed',
-    left: 0,
-    top: 0,
-    height: '100vh',
-    zIndex: 1000,
-    transition: 'transform 0.3s ease',
-    transform: siderVisible ? 'translateX(0)' : 'translateX(-400px)',
-    boxShadow: siderVisible ? '2px 0 8px rgba(0,0,0,0.5)' : 'none',
-    overflow: 'hidden',
-    background: 'linear-gradient(to bottom, #151515, #252525)'
-  };
-
-  // Add a trigger tab that's always visible
-  const triggerStyle = {
-    position: 'fixed' as 'fixed',
-    left: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '20px',
-    height: '80px',
-    background: 'linear-gradient(to right, #151515, #252525)',
-    borderRadius: '0 4px 4px 0',
-    boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
-    cursor: 'pointer',
-    zIndex: 999,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#e0e0e0'
-  };
-
   return (
-    <Layout style={{ minHeight: '100vh', background: '#121212' }}>
-      {/* Add the Rename Folder custom modal */}
-      {isRenameModalVisible && (
-        <div 
-          ref={renameModalRef}
+    <div>
+      <Layout>
+        <Sider 
+          width={280} 
           style={{ 
+            background: 'var(--card-bg)',
+            boxShadow: '-2px 0 8px var(--shadow-color)',
             position: 'fixed',
-            zIndex: 1000,
-            background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            width: '400px',
-            maxWidth: '90vw',
+            right: 0,
+            top: 64,
+            height: 'calc(100vh - 64px)',
             transition: 'all 0.3s ease',
-            border: '1px solid #333',
-            color: '#e0e0e0',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)'
+            zIndex: 5,
+            overflow: 'auto',
+            transform: `translateX(${siderVisible ? 0 : 280}px)`,
+            borderLeft: '1px solid var(--border-color)'
           }}
+          className="stock-sider"
+          ref={siderRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <div style={{ 
-            marginBottom: '12px', 
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <EditOutlined style={{ color: '#1890ff' }} />
-            <span>Rename Folder</span>
-            <span style={{ 
-              color: '#1890ff', 
-              backgroundColor: 'rgba(24, 144, 255, 0.15)', 
-              padding: '2px 8px', 
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}>
-              {selectedFolder.split('/').pop()}
-            </span>
+            position: 'absolute', 
+            left: siderVisible ? -40 : -30, 
+            top: '50%',
+            padding: '12px 12px 12px 8px',
+            background: 'var(--card-bg)',
+            borderRadius: '50% 0 0 50%',
+            boxShadow: '-2px 0 8px var(--shadow-color)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            zIndex: 4,
+            border: '1px solid var(--border-color)',
+            borderRight: 'none',
+            color: 'var(--text-primary)',
+            backgroundColor: siderPinned ? 'var(--highlight-bg)' : 'var(--card-bg)'
+          }} 
+          onClick={toggleSiderPin}
+          >
+            {siderVisible ? 
+             (siderPinned ? <CompressOutlined /> : <ExpandOutlined rotate={90} />) 
+             : <ExpandOutlined rotate={270} />}
           </div>
+          
+          <div style={{ padding: '16px 8px 8px' }}>
+            <div style={{ 
+              marginBottom: '16px',
+              textAlign: 'center',
+              color: 'var(--text-primary)',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              Watchlist {siderPinned && <span style={{ fontSize: '12px', color: 'var(--primary-color)', background: 'var(--highlight-bg)', padding: '2px 6px', borderRadius: '4px' }}>Pinned</span>}
+            </div>
+            
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}>
+              <Input.Search 
+                placeholder="Search stocks" 
+                style={{ flex: 1 }} 
+                size="middle"
+                onSearch={(value) => {
+                  if (value) {
+                    const stockFound = getAllStocks().find(stock => 
+                      stock.toLowerCase().includes(value.toLowerCase())
+                    );
+                    if (stockFound) {
+                      setSelectedStock(stockFound);
+                      scrollToStock(stockFound);
+                    }
+                  }
+                }}
+              />
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={() => setIsModalVisible(true)}
+                style={{ marginLeft: '8px', borderRadius: '6px' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', marginBottom: '12px' }}>
+              <Button 
+                onClick={() => handleExpandAll(true)} 
+                size="small" 
+                style={{ flex: 1, margin: '0 4px', borderRadius: '6px' }}
+              >
+                Expand All
+              </Button>
+              <Button 
+                onClick={() => handleExpandAll(false)} 
+                size="small" 
+                style={{ flex: 1, margin: '0 4px', borderRadius: '6px' }}
+              >
+                Collapse All
+              </Button>
+              <Button 
+                onClick={handleRefreshDirectory} 
+                icon={<ReloadOutlined />} 
+                size="small" 
+                style={{ margin: '0 4px', borderRadius: '6px' }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '12px' }}>
+              <Button.Group style={{ width: '100%' }}>
+                {['1', '5', '15', '30', '60', 'D', 'W'].map(t => (
+                  <Button 
+                    key={t} 
+                    type={timeframe === t ? 'primary' : 'default'} 
+                    onClick={() => setTimeframe(t as StockCardProps['timeframe'])}
+                    style={{ 
+                      flex: 1, 
+                      fontWeight: timeframe === t ? 500 : 400,
+                      borderRadius: 0
+                    }}
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </Button.Group>
+            </div>
+            
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Spin />
+                <div style={{ marginTop: 8 }}>Loading watchlist...</div>
+              </div>
+            ) : (
+              <Tree
+                className="draggable-tree"
+                draggable
+                blockNode
+                showIcon={false}
+                onDrop={onDrop}
+                onSelect={selectedKeys => {
+                  setSelectedKeys(selectedKeys);
+                  handleTreeSelect(selectedKeys);
+                }}
+                onExpand={(expandedKeys, info) => {
+                  setExpandedKeys(expandedKeys as string[]);
+                  handleExpand(expandedKeys, info);
+                }}
+                expandedKeys={expandedKeys}
+                selectedKeys={selectedKeys}
+                treeData={Object.keys(watchlist.groups).map(groupName => 
+                  generateTreeData(watchlist.groups[groupName], groupName)
+                )}
+                style={{ 
+                  background: 'transparent', 
+                  borderRadius: '4px'
+                }}
+              />
+            )}
+          </div>
+        </Sider>
+        
+        <Content style={{ 
+          marginRight: siderVisible ? 290 : 10, 
+          marginLeft: 10,
+          transition: 'margin-right 0.3s ease',
+          paddingTop: 8
+        }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>Loading stocks data...</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                marginBottom: '12px',
+                paddingRight: '8px'
+              }}>
+                <Button 
+                  icon={siderPinned ? <CompressOutlined /> : <ExpandOutlined />}
+                  onClick={toggleSiderPin}
+                  type={siderPinned ? "primary" : "default"}
+                  style={{ 
+                    borderRadius: '50%', 
+                    width: '36px', 
+                    height: '36px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px var(--shadow-color)',
+                    backgroundColor: siderPinned ? 'var(--primary-color)' : undefined,
+                    color: siderPinned ? '#ffffff' : undefined
+                  }}
+                  title={siderPinned ? "Unpin Watchlist" : "Pin Watchlist"}
+                />
+              </div>
+              
+              {selectedStock ? (
+                <div ref={el => {
+                  if (el) stockRefs.current[selectedStock] = el;
+                }}>
+                  <StockCard symbol={selectedStock} timeframe={timeframe} />
+                </div>
+              ) : (
+                <>
+                  {getAllStocks().map(symbol => (
+                    <div key={symbol} ref={el => {
+                      if (el) stockRefs.current[symbol] = el;
+                    }}>
+                      <StockCard symbol={symbol} timeframe={timeframe} />
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </Content>
+      </Layout>
+
+      {/* Group Add Modal */}
+      <Modal
+        title="Add Folder"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={() => {
+              form.validateFields().then(values => {
+                handleAddFolder(values);
+              });
+            }}
+          >
+            Create
+          </Button>,
+        ]}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Folder Name"
+            rules={[{ required: true, message: 'Please enter folder name' }]}
+          >
+            <Input placeholder="E.g., Tech Stocks" />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea placeholder="Optional description for this folder" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Rename Folder Modal */}
+      {isRenameModalVisible && (
+        <div
+          ref={renameModalRef}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000,
+            background: 'var(--bg-elevated)',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '300px',
+            boxShadow: '0 4px 12px var(--shadow-color)',
+            border: '1px solid var(--border-color)'
+          }}
+        >
+          <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Rename Folder</h3>
           <Input
             value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Enter new name"
+            onChange={e => setNewFolderName(e.target.value)}
+            placeholder="New folder name"
+            style={{ marginBottom: '15px' }}
             autoFocus
-            style={{ 
-              resize: 'none',
-              backgroundColor: '#222',
-              border: '1px solid #444',
-              borderRadius: '4px',
-              width: '100%',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              padding: '8px 12px',
-              color: '#e0e0e0'
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleRenameSubmit();
-              }
-            }}
           />
-          <div style={{ 
-            marginTop: '12px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '8px'
-          }}>
-            <Button 
+          <div style={{ textAlign: 'right' }}>
+            <Button
               onClick={() => setIsRenameModalVisible(false)}
-              style={{
-                backgroundColor: '#333',
-                borderColor: '#444',
-                color: '#e0e0e0'
-              }}
+              style={{ marginRight: '8px' }}
             >
               Cancel
             </Button>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               onClick={handleRenameSubmit}
-              style={{
-                background: 'linear-gradient(to right, #1890ff, #096dd9)',
-                borderColor: '#096dd9'
-              }}
+              disabled={!newFolderName.trim()}
             >
               Rename
             </Button>
@@ -1171,296 +1358,43 @@ const StockDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Add the Delete Folder custom modal */}
+      {/* Delete Folder Confirmation */}
       {isDeleteModalVisible && (
-        <div 
+        <div
           ref={deleteModalRef}
-          style={{ 
+          style={{
             position: 'fixed',
-            zIndex: 1000,
-            background: 'linear-gradient(to bottom, #1f1f1f, #2d2d2d)',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            width: '400px',
-            maxWidth: '90vw',
-            transition: 'all 0.3s ease',
-            border: '1px solid #333',
-            color: '#e0e0e0',
             top: '50%',
             left: '50%',
-            transform: 'translate(-50%, -50%)'
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000,
+            background: 'var(--bg-elevated)',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '300px',
+            boxShadow: '0 4px 12px var(--shadow-color)',
+            border: '1px solid var(--border-color)'
           }}
         >
-          <div style={{ 
-            marginBottom: '12px', 
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <DeleteOutlined style={{ color: '#ff4d4f' }} />
-            <span>Delete Folder</span>
-            <span style={{ 
-              color: '#ff4d4f', 
-              backgroundColor: 'rgba(255, 77, 79, 0.15)', 
-              padding: '2px 8px', 
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}>
-              {selectedFolder.split('/').pop()}
-            </span>
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            Deleting the folder will move all stocks to the default group. Are you sure you want to delete?
-          </div>
-          <div style={{ 
-            marginTop: '12px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '8px'
-          }}>
-            <Button 
+          <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Delete Folder</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Are you sure you want to delete the folder <strong>{selectedFolder}</strong>?
+            All stocks will be moved to the default group.
+          </p>
+          <div style={{ textAlign: 'right' }}>
+            <Button
               onClick={() => setIsDeleteModalVisible(false)}
-              style={{
-                backgroundColor: '#333',
-                borderColor: '#444',
-                color: '#e0e0e0'
-              }}
+              style={{ marginRight: '8px' }}
             >
               Cancel
             </Button>
-            <Button 
-              danger
-              onClick={handleDeleteConfirm}
-              style={{
-                background: 'linear-gradient(to right, #ff4d4f, #cf1322)',
-                borderColor: '#cf1322'
-              }}
-            >
+            <Button type="primary" danger onClick={handleDeleteConfirm}>
               Delete
             </Button>
           </div>
         </div>
       )}
-      
-      {/* Add the trigger tab */}
-      <div 
-        style={triggerStyle} 
-        onMouseEnter={handleMouseEnter}
-      >
-        <StockOutlined />
-      </div>
-
-      {/* Modified Sider with hover behavior */}
-      <div 
-        ref={siderRef}
-        style={siderStyle}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Sider width={400} theme="dark" style={{ height: '100%', padding: '16px', background: 'transparent' }}>
-          <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <StockSearch 
-              onSelect={(symbol) => {
-                setSelectedStock(symbol);
-                fetchWatchlist();  // 刷新观察列表
-              }} 
-              style={{ width: '100%' }}
-            />
-            
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={() => setIsModalVisible(true)}
-                style={{ 
-                  flex: 1, 
-                  background: 'linear-gradient(to right, #1890ff, #096dd9)',
-                  borderColor: '#096dd9'
-                }}
-              >
-                New Folder
-              </Button>
-              <Tooltip title="Refresh Directory" placement="bottom">
-                <Button
-                  icon={<ReloadOutlined />}
-                  style={{
-                    background: '#333',
-                    borderColor: '#444',
-                    color: '#e0e0e0'
-                  }}
-                  onClick={handleRefreshDirectory}
-                />
-              </Tooltip>
-              <Tooltip 
-                title={expandedKeys.length === 0 ? "Expand All Folders" : "Collapse All Folders"}
-                placement="bottom"
-              >
-                <Button
-                  onClick={() => handleExpandAll(expandedKeys.length === 0)}
-                  icon={expandedKeys.length === 0 ? <ExpandOutlined /> : <CompressOutlined />}
-                  style={{
-                    background: '#333',
-                    borderColor: '#444',
-                    color: '#e0e0e0'
-                  }}
-                />
-              </Tooltip>
-            </div>
-          </div>
-          
-          {loading ? (
-            <Spin />
-          ) : (
-            <Tree
-              treeData={treeData}
-              expandedKeys={expandedKeys}
-              selectedKeys={selectedKeys}
-              onExpand={handleExpand}
-              onSelect={(keys) => {
-                const validKeys = keys.filter(key => 
-                  typeof key === 'string' && key.startsWith('stock-')
-                );
-                setSelectedKeys(validKeys);
-                
-                if (validKeys.length === 1) {
-                  const symbol = (validKeys[0] as string).replace('stock-', '');
-                  setSelectedStock(symbol);
-                  scrollToStock(symbol);
-                }
-              }}
-              draggable
-              onDrop={onDrop}
-              showIcon
-              style={{
-                backgroundColor: 'transparent',
-                color: '#e0e0e0'
-              }}
-            />
-          )}
-        </Sider>
-      </div>
-
-      {/* Add back the Modal that was removed */}
-      <Modal
-        title={<span style={{ color: '#e0e0e0' }}>New Folder</span>}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        onOk={() => form.submit()}
-        style={{ top: 20 }}
-        bodyStyle={{ 
-          background: '#1f1f1f',
-          color: '#e0e0e0',
-          padding: '16px'
-        }}
-        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-        className="dark-theme-modal"
-        okButtonProps={{
-          style: {
-            background: 'linear-gradient(to right, #1890ff, #096dd9)',
-            borderColor: '#096dd9'
-          }
-        }}
-        cancelButtonProps={{
-          style: {
-            background: '#333',
-            borderColor: '#444',
-            color: '#e0e0e0'
-          }
-        }}
-        okText="Create"
-        cancelText="Cancel"
-      >
-        <Form 
-          form={form} 
-          onFinish={handleAddFolder}
-          style={{ color: '#e0e0e0' }}
-        >
-          <Form.Item
-            name="name"
-            label={<span style={{ color: '#e0e0e0' }}>Name</span>}
-            rules={[{ required: true, message: 'Please enter folder name' }]}
-          >
-            <Input style={{ backgroundColor: '#333', borderColor: '#444', color: '#e0e0e0' }} />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label={<span style={{ color: '#e0e0e0' }}>Description</span>}
-          >
-            <Input style={{ backgroundColor: '#333', borderColor: '#444', color: '#e0e0e0' }} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modified Content to use full width */}
-      <Content style={{ padding: '24px', marginLeft: 0, width: '100%', overflowY: 'auto', background: '#121212' }}>
-        
-        {/* 渲染未分组股票 */}
-        {getUngroupedStocks().length > 0 && (
-          <div>
-            <h2 style={{ margin: '16px 0', color: '#e0e0e0' }}>Ungrouped Stocks</h2>
-            {getUngroupedStocks().map(symbol => (
-              <div 
-                key={symbol}
-                ref={(el: HTMLDivElement | null) => {
-                  stockRefs.current[symbol] = el;
-                  return undefined;
-                }}
-                id={`stock-${symbol}`}
-              >
-                <StockCard
-                  symbol={symbol}
-                  timeframe={timeframe}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {/* 渲染分组和子分组的股票 */}
-        {Object.entries(watchlist.groups)
-          .filter(([groupName]) => groupName !== "默认分组")
-          .map(([groupName, group]) => {
-            const renderStockGroup = (stocks: string[], indent: number = 0) => (
-              <>
-                {stocks.map(symbol => (
-                  <div 
-                    key={symbol}
-                    ref={(el: HTMLDivElement | null) => {
-                      stockRefs.current[symbol] = el;
-                      return undefined;
-                    }}
-                    id={`stock-${symbol}`}
-                    style={{ marginLeft: `${indent}px` }}
-                  >
-                    <StockCard
-                      symbol={symbol}
-                      timeframe={timeframe}
-                    />
-                  </div>
-                ))}
-              </>
-            );
-
-            return (
-              <div key={groupName}>
-                <h2 style={{ margin: '16px 0', color: '#e0e0e0' }}>{groupName}</h2>
-                {/* 渲染当前分组的股票 */}
-                {renderStockGroup(group.stocks)}
-                
-                {/* 渲染子分组的股票 */}
-                {group.subGroups && Object.entries(group.subGroups).map(([subGroupName, subGroup]) => (
-                  <div key={`${groupName}-${subGroupName}`}>
-                    <h3 style={{ margin: '16px 0', paddingLeft: '20px', color: '#e0e0e0' }}>{subGroupName}</h3>
-                    {renderStockGroup(subGroup.stocks, 20)}
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-      </Content>
-    </Layout>
+    </div>
   );
 };
 
