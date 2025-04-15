@@ -90,7 +90,7 @@ const StockScreener: React.FC = () => {
     try {
       // In a real app, this would be an API call to your backend
       // For now, we'll simulate with dummy data
-      const apiUrl = `${process.env.REACT_APP_API_URL}/api/analysis/screening`;
+      const apiUrl = `${process.env.REACT_APP_API_URL}/analysis/screening`;
       
       const response = await axios.post(apiUrl, { criteria });
       
@@ -107,7 +107,7 @@ const StockScreener: React.FC = () => {
   // Add a stock to watchlist
   const addToWatchlist = async (symbol: string) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/watchlist/add`, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/watchlist/add`, {
         symbol,
         group: "Default Group"
       });

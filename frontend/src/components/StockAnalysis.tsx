@@ -16,7 +16,7 @@ interface AnalysisProps {
   symbol: string;
 }
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8002';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8002/api/v1';
 
 // Prediction verification card component with theme support
 const PredictionCard = ({ prediction, index }: { prediction: any, index: number }) => {
@@ -124,7 +124,7 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
     const fetchAnalysis = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_URL}/api/stock/analysis/${symbol}`);
+        const response = await fetch(`${API_URL}/stock/analysis/${symbol}`);
         
         if (!response.ok) {
           console.warn(`No analysis data found for ${symbol}, using mock data`);
@@ -192,7 +192,7 @@ const StockAnalysis: React.FC<AnalysisProps> = ({ symbol }) => {
     
     try {
       setIsBackTesting(true);
-      const url = `${API_URL}/api/stock/backtest/${symbol}?start_date=${startDate}&end_date=${endDate}`;
+      const url = `${API_URL}/stock/backtest/${symbol}?start_date=${startDate}&end_date=${endDate}`;
       console.log('Requesting backtest:', url);
       
       const response = await fetch(url, {

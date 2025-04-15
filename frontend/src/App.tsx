@@ -1,54 +1,102 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { ConfigProvider, Layout, Menu, theme, Typography, notification } from 'antd';
-import { DashboardOutlined, BarChartOutlined, SettingOutlined, BulbOutlined, LineChartOutlined } from '@ant-design/icons';
+import React, { useEffect, createContext } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { ConfigProvider, Layout, Menu, Typography, notification, theme } from 'antd';
+import { 
+  DashboardOutlined, 
+  BarChartOutlined, 
+  SettingOutlined, 
+  BulbOutlined, 
+  LineChartOutlined,
+  UserOutlined
+} from '@ant-design/icons';
 import './App.css';
-import StockDashboard from './components/StockDashboard';
-// @ts-ignore - Module exists but TypeScript cannot find it
+import { useAppSelector, useAppDispatch } from './store/hooks';
+import { toggleDarkMode, toggleSidebar, setCurrentPage } from './store/slices/uiSlice';
+import { getProfile } from './store/slices/authSlice';
+
+// Pages
+import Dashboard from './pages/Dashboard';
 import StockScreener from './pages/StockScreener';
-// @ts-ignore - Module exists but TypeScript cannot find it
 import Settings from './pages/Settings';
-// @ts-ignore - Module exists but TypeScript cannot find it
 import TechnicalAnalysis from './pages/TechnicalAnalysis';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Title } = Typography;
 
-// Create a theme context to share theme across components
-export type ThemeContextType = {
-  darkMode: boolean;
-  toggleTheme: () => void;
-};
+// Create a theme context
+export const ThemeContext = createContext({ darkMode: false });
 
-export const ThemeContext = createContext<ThemeContextType>({
-  darkMode: true,
-  toggleTheme: () => {}
-});
-
-// Hook to use theme in components
-export const useTheme = () => useContext(ThemeContext);
+// Create a custom hook for using theme
+export const useTheme = () => React.useContext(ThemeContext);
 
 function App() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'screener' | 'settings' | 'technical'>('dashboard');
-
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { darkMode, sidebarCollapsed, currentPage } = useAppSelector(state => state.ui);
+  const { isAuthenticated, token } = useAppSelector(state => state.auth);
+  
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
     // Apply theme class to body for global CSS variables
     document.body.className = darkMode ? 'dark-theme' : 'light-theme';
   }, [darkMode]);
+  
+  useEffect(() => {
+    // If authenticated, fetch user profile
+    if (isAuthenticated && token) {
+      dispatch(getProfile());
+    }
+  }, [isAuthenticated, token, dispatch]);
 
-  const toggleTheme = () => {
-    setDarkMode((prevMode: boolean) => !prevMode);
+  // Sync menu selection with current route
+  useEffect(() => {
+    const pathname = location.pathname;
+    
+    if (pathname === '/') {
+      dispatch(setCurrentPage('dashboard'));
+    } else if (pathname === '/screener') {
+      dispatch(setCurrentPage('screener'));
+    } else if (pathname === '/technical') {
+      dispatch(setCurrentPage('technical'));
+    } else if (pathname === '/settings') {
+      dispatch(setCurrentPage('settings'));
+    }
+  }, [location.pathname, dispatch]);
+
+  const handleToggleTheme = () => {
+    dispatch(toggleDarkMode());
     notification.success({
       message: `Switched to ${darkMode ? 'Light' : 'Dark'} Mode`,
       description: `The application theme has been changed to ${darkMode ? 'light' : 'dark'} mode.`,
       placement: 'bottomRight',
       duration: 3
     });
+  };
+
+  const handleMenuClick = (key: string) => {
+    if (key === 'theme') {
+      handleToggleTheme();
+    } else {
+      dispatch(setCurrentPage(key as any));
+      // Navigate to the corresponding route
+      switch(key) {
+        case 'dashboard':
+          navigate('/');
+          break;
+        case 'screener':
+          navigate('/screener');
+          break;
+        case 'technical':
+          navigate('/technical');
+          break;
+        case 'settings':
+          navigate('/settings');
+          break;
+      }
+    }
   };
 
   // Dynamic theme based on dark mode state
@@ -63,23 +111,8 @@ function App() {
     colorBgBase: darkMode ? '#141414' : '#f0f2f5',
   };
 
-  // Render the current page based on selection
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'screener':
-        return <StockScreener />;
-      case 'settings':
-        return <Settings />;
-      case 'technical':
-        return <TechnicalAnalysis />;
-      case 'dashboard':
-      default:
-        return <StockDashboard />;
-    }
-  };
-
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ darkMode }}>
       <ConfigProvider
         theme={{
           algorithm: darkMode ? darkAlgorithm : defaultAlgorithm,
@@ -170,95 +203,109 @@ function App() {
           }
         }}
       >
-        <Layout style={{ minHeight: '100vh' }}>
-          <Sider 
-            collapsible 
-            collapsed={collapsed} 
-            onCollapse={setCollapsed}
-            style={{
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-              zIndex: 10
-            }}
-            theme={darkMode ? 'dark' : 'light'}
-          >
-            <div className="logo">
-              <Title level={4} style={{ 
-                margin: '16px 0',
-                textAlign: 'center',
-                color: darkMode ? '#e0e0e0' : '#000000',
-                transition: 'color 0.3s ease'
-              }}>
-                {collapsed ? 'SM' : 'Stock Master'}
-              </Title>
-            </div>
-            <Menu
-              theme={darkMode ? 'dark' : 'light'}
-              defaultSelectedKeys={['dashboard']}
-              selectedKeys={[currentPage]}
-              mode="inline"
-              items={[
-                {
-                  key: 'dashboard',
-                  icon: <DashboardOutlined />,
-                  label: 'Dashboard',
-                  onClick: () => setCurrentPage('dashboard'),
-                },
-                {
-                  key: 'screener',
-                  icon: <BarChartOutlined />,
-                  label: 'Stock Screener',
-                  onClick: () => setCurrentPage('screener'),
-                },
-                {
-                  key: 'technical',
-                  icon: <LineChartOutlined />,
-                  label: 'Technical Analysis',
-                  onClick: () => setCurrentPage('technical'),
-                },
-                {
-                  key: 'settings',
-                  icon: <SettingOutlined />,
-                  label: 'Settings',
-                  onClick: () => setCurrentPage('settings'),
-                },
-                {
-                  key: 'theme',
-                  icon: <BulbOutlined />,
-                  label: `${darkMode ? 'Light' : 'Dark'} Mode`,
-                  onClick: toggleTheme,
-                },
-              ]}
-            />
-          </Sider>
-          <Layout>
-            <Header style={{ 
-              padding: 0,
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-              background: darkMode ? '#1f1f1f' : '#ffffff',
-              transition: 'background-color 0.3s ease'
-            }} />
-            <Content style={{ margin: '16px' }}>
-              <div style={{ 
-                padding: 24, 
-                minHeight: 360,
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                background: darkMode ? '#1a1a1a' : '#ffffff',
-                transition: 'background-color 0.3s ease, box-shadow 0.3s ease'
-              }}>
-                {renderCurrentPage()}
-              </div>
-            </Content>
-            <Footer style={{ 
-              textAlign: 'center',
-              background: darkMode ? '#1f1f1f' : '#f0f2f5',
-              color: darkMode ? '#a0a0a0' : '#595959',
-              transition: 'background-color 0.3s ease, color 0.3s ease'
-            }}>
-              Stock Master ©{new Date().getFullYear()} - Advanced Stock Analysis Platform
-            </Footer>
-          </Layout>
-        </Layout>
+        <Routes>
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
+          <Route path="/*" element={
+            <ProtectedRoute>
+              <Layout style={{ minHeight: '100vh' }}>
+                <Sider 
+                  collapsible 
+                  collapsed={sidebarCollapsed} 
+                  onCollapse={() => dispatch(toggleSidebar())}
+                  style={{
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                    zIndex: 10
+                  }}
+                  theme={darkMode ? 'dark' : 'light'}
+                >
+                  <div className="logo">
+                    <Title level={4} style={{ 
+                      margin: '16px 0',
+                      textAlign: 'center',
+                      color: darkMode ? '#e0e0e0' : '#000000',
+                      transition: 'color 0.3s ease'
+                    }}>
+                      {sidebarCollapsed ? 'SM' : 'Stock Master'}
+                    </Title>
+                  </div>
+                  <Menu
+                    theme={darkMode ? 'dark' : 'light'}
+                    defaultSelectedKeys={['dashboard']}
+                    selectedKeys={[currentPage]}
+                    mode="inline"
+                    items={[
+                      {
+                        key: 'dashboard',
+                        icon: <DashboardOutlined />,
+                        label: 'Dashboard',
+                        onClick: () => handleMenuClick('dashboard'),
+                      },
+                      {
+                        key: 'screener',
+                        icon: <BarChartOutlined />,
+                        label: 'Stock Screener',
+                        onClick: () => handleMenuClick('screener'),
+                      },
+                      {
+                        key: 'technical',
+                        icon: <LineChartOutlined />,
+                        label: 'Technical Analysis',
+                        onClick: () => handleMenuClick('technical'),
+                      },
+                      {
+                        key: 'settings',
+                        icon: <SettingOutlined />,
+                        label: 'Settings',
+                        onClick: () => handleMenuClick('settings'),
+                      },
+                      {
+                        key: 'theme',
+                        icon: <BulbOutlined />,
+                        label: `${darkMode ? 'Light' : 'Dark'} Mode`,
+                        onClick: () => handleMenuClick('theme'),
+                      },
+                    ]}
+                  />
+                </Sider>
+                <Layout>
+                  <Header style={{ 
+                    padding: 0,
+                    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+                    background: darkMode ? '#1f1f1f' : '#ffffff',
+                    transition: 'background-color 0.3s ease'
+                  }} />
+                  <Content style={{ margin: '16px' }}>
+                    <div style={{ 
+                      padding: 24, 
+                      minHeight: 360,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      background: darkMode ? '#1a1a1a' : '#ffffff',
+                      transition: 'background-color 0.3s ease, box-shadow 0.3s ease'
+                    }}>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/screener" element={<StockScreener />} />
+                        <Route path="/technical" element={<TechnicalAnalysis />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </div>
+                  </Content>
+                  <Footer style={{ 
+                    textAlign: 'center',
+                    background: darkMode ? '#1f1f1f' : '#f0f2f5',
+                    color: darkMode ? '#a0a0a0' : '#595959',
+                    transition: 'background-color 0.3s ease, color 0.3s ease'
+                  }}>
+                    Stock Master ©{new Date().getFullYear()} - Advanced Stock Analysis Platform
+                  </Footer>
+                </Layout>
+              </Layout>
+            </ProtectedRoute>
+          } />
+        </Routes>
       </ConfigProvider>
     </ThemeContext.Provider>
   );

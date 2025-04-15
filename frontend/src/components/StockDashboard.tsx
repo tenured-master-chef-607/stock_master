@@ -84,13 +84,13 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
   useEffect(() => {
     const fetchNote = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/stock/note/${symbol}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/stock/note/${symbol}`);
         if (response.ok) {
           const data = await response.json();
-          setNote(data.note);
+          setNote(data.note || '');
         }
       } catch (error) {
-        console.error('Failed to fetch note:', error);
+        console.error('Error fetching note:', error);
       }
     };
     fetchNote();
@@ -99,7 +99,7 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, timeframe, backTestRange 
   // 更新备注
   const updateNote = async (newNote: string) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/stock/note`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/stock/note`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ const StockDashboard: React.FC = () => {
   // 获取观察列表
   const fetchWatchlist = React.useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`);
       if (!response.ok) {
         throw new Error('获取观察列表失败');
       }
@@ -492,7 +492,7 @@ const StockDashboard: React.FC = () => {
   const handleDeleteStock = async (groupName: string, symbol: string) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/watchlist/${encodeURIComponent(groupName)}/${encodeURIComponent(symbol)}`,
+        `${process.env.REACT_APP_API_URL}/watchlist/${encodeURIComponent(groupName)}/${encodeURIComponent(symbol)}`,
         {
           method: 'DELETE',
         }
@@ -526,7 +526,7 @@ const StockDashboard: React.FC = () => {
         // 如果是重新排序（放在另一个文件夹的前面或后面）
         if (dropPosition === -1 || dropPosition === 1) {
             try {
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/groups/reorder`, {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/groups/reorder`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -555,7 +555,7 @@ const StockDashboard: React.FC = () => {
         
         // 如果是移动到另一个文件夹内部
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/groups/move`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/groups/move`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -632,13 +632,13 @@ const StockDashboard: React.FC = () => {
               }
             }
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist/reorder`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist/reorder`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                group: fullGroupPath,
+                groupPath: fullGroupPath,
                 source_symbol: symbol,
                 target_symbol: targetSymbol,
                 position: dropPosition === -1 ? 'before' : 'after'
@@ -686,7 +686,7 @@ const StockDashboard: React.FC = () => {
         // 依次移动每个股票
         for (const stockSymbol of stocksToMove) {
           console.log(`Moving stock ${stockSymbol} from ${fromGroup} to ${toGroup}`);
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist/move`, {
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist/move`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -741,7 +741,7 @@ const StockDashboard: React.FC = () => {
   // 新建文件夹
   const handleAddFolder = async (values: { name: string; description: string }) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/groups`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/groups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -790,7 +790,7 @@ const StockDashboard: React.FC = () => {
   const handleDeleteFolder = async (groupPath: string) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/groups/${encodeURIComponent(groupPath)}`, 
+        `${process.env.REACT_APP_API_URL}/groups/${encodeURIComponent(groupPath)}`, 
         {
           method: 'DELETE',
         }
@@ -812,7 +812,7 @@ const StockDashboard: React.FC = () => {
   // 修改 handleRenameFolder 函数
   const handleRenameFolder = async (groupPath: string, newName: string) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/groups/rename`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/groups/rename`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1029,7 +1029,7 @@ const StockDashboard: React.FC = () => {
   // 添加刷新目录的函数
   const handleRefreshDirectory = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`);
       if (!response.ok) {
         throw new Error('获取观察列表失败');
       }

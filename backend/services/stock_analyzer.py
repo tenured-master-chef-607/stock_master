@@ -7,6 +7,10 @@ import logging
 import pytz
 import requests
 from time import sleep
+import yfinance as yf
+import numpy as np
+from fastapi import HTTPException, status
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -362,3 +366,219 @@ class StockAnalyzer:
         except Exception as e:
             logger.error(f"Unexpected error in backtest analysis for {ticker}: {str(e)}")
             return {"error": str(e)}
+
+class StockAnalyzerService:
+    """Service for stock analysis operations"""
+    
+    def generate_daily_report(self, symbol: str) -> Dict[str, Any]:
+        """
+        Generate a daily analysis report for a stock
+        """
+        try:
+            # Get stock data
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="1y")
+            
+            if hist.empty:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No data found for stock {symbol}"
+                )
+            
+            # Basic info
+            info = ticker.info
+            
+            # Calculate some technical indicators
+            hist['SMA_20'] = hist['Close'].rolling(window=20).mean()
+            hist['SMA_50'] = hist['Close'].rolling(window=50).mean()
+            hist['SMA_200'] = hist['Close'].rolling(window=200).mean()
+            
+            # RSI calculation
+            delta = hist['Close'].diff()
+            gain = delta.where(delta > 0, 0)
+            loss = -delta.where(delta < 0, 0)
+            avg_gain = gain.rolling(window=14).mean()
+            avg_loss = loss.rolling(window=14).mean()
+            rs = avg_gain / avg_loss
+            hist['RSI'] = 100 - (100 / (1 + rs))
+            
+            # MACD
+            hist['EMA_12'] = hist['Close'].ewm(span=12, adjust=False).mean()
+            hist['EMA_26'] = hist['Close'].ewm(span=26, adjust=False).mean()
+            hist['MACD'] = hist['EMA_12'] - hist['EMA_26']
+            hist['Signal_Line'] = hist['MACD'].ewm(span=9, adjust=False).mean()
+            
+            # Get the most recent values
+            latest = hist.iloc[-1]
+            previous = hist.iloc[-2]
+            
+            # Format the data for the report
+            report = {
+                "symbol": symbol,
+                "name": info.get('longName', symbol),
+                "current_price": round(latest['Close'], 2),
+                "price_change": round(latest['Close'] - previous['Close'], 2),
+                "price_change_percent": round((latest['Close'] / previous['Close'] - 1) * 100, 2),
+                "volume": int(latest['Volume']),
+                "market_cap": info.get('marketCap', None),
+                "pe_ratio": info.get('trailingPE', None),
+                "dividend_yield": info.get('dividendYield', None),
+                "52w_high": info.get('fiftyTwoWeekHigh', None),
+                "52w_low": info.get('fiftyTwoWeekLow', None),
+                "technical_indicators": {
+                    "sma_20": round(latest['SMA_20'], 2) if not np.isnan(latest['SMA_20']) else None,
+                    "sma_50": round(latest['SMA_50'], 2) if not np.isnan(latest['SMA_50']) else None,
+                    "sma_200": round(latest['SMA_200'], 2) if not np.isnan(latest['SMA_200']) else None,
+                    "rsi": round(latest['RSI'], 2) if not np.isnan(latest['RSI']) else None,
+                    "macd": round(latest['MACD'], 2) if not np.isnan(latest['MACD']) else None,
+                    "signal_line": round(latest['Signal_Line'], 2) if not np.isnan(latest['Signal_Line']) else None,
+                },
+                "recommendation": self._generate_recommendation(latest, info)
+            }
+            
+            # Add historical data for charts
+            report["historical_data"] = {
+                "dates": hist.index[-30:].strftime('%Y-%m-%d').tolist(),
+                "prices": hist['Close'][-30:].round(2).tolist(),
+                "volumes": hist['Volume'][-30:].astype(int).tolist(),
+                "sma_20": hist['SMA_20'][-30:].round(2).fillna(None).tolist(),
+                "sma_50": hist['SMA_50'][-30:].round(2).fillna(None).tolist(),
+                "rsi": hist['RSI'][-30:].round(2).fillna(None).tolist(),
+                "macd": hist['MACD'][-30:].round(2).fillna(None).tolist(),
+                "signal_line": hist['Signal_Line'][-30:].round(2).fillna(None).tolist(),
+            }
+            
+            return report
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error analyzing stock {symbol}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to analyze stock: {str(e)}"
+            )
+    
+    def _generate_recommendation(self, latest, info) -> Dict[str, Any]:
+        """
+        Generate a simple recommendation based on technical indicators
+        """
+        # Default recommendation
+        recommendation = {
+            "action": "HOLD",
+            "strength": "NEUTRAL",
+            "reasons": []
+        }
+        
+        # RSI analysis
+        if latest['RSI'] < 30:
+            recommendation["reasons"].append("RSI is below 30, indicating oversold conditions")
+            recommendation["strength"] = "STRONG"
+            recommendation["action"] = "BUY"
+        elif latest['RSI'] > 70:
+            recommendation["reasons"].append("RSI is above 70, indicating overbought conditions")
+            recommendation["strength"] = "STRONG"
+            recommendation["action"] = "SELL"
+        
+        # Moving average analysis
+        if latest['Close'] > latest['SMA_200']:
+            recommendation["reasons"].append("Price is above 200-day SMA, indicating long-term uptrend")
+            if recommendation["action"] != "SELL":
+                recommendation["action"] = "BUY"
+                if recommendation["strength"] == "NEUTRAL":
+                    recommendation["strength"] = "MODERATE"
+        else:
+            recommendation["reasons"].append("Price is below 200-day SMA, indicating long-term downtrend")
+            if recommendation["action"] != "BUY":
+                recommendation["action"] = "SELL"
+                if recommendation["strength"] == "NEUTRAL":
+                    recommendation["strength"] = "MODERATE"
+        
+        # MACD analysis
+        if latest['MACD'] > latest['Signal_Line']:
+            recommendation["reasons"].append("MACD is above signal line, indicating bullish momentum")
+            if recommendation["action"] != "SELL":
+                recommendation["action"] = "BUY"
+                if recommendation["strength"] == "NEUTRAL":
+                    recommendation["strength"] = "MODERATE"
+        else:
+            recommendation["reasons"].append("MACD is below signal line, indicating bearish momentum")
+            if recommendation["action"] != "BUY":
+                recommendation["action"] = "SELL"
+                if recommendation["strength"] == "NEUTRAL":
+                    recommendation["strength"] = "MODERATE"
+        
+        return recommendation
+    
+    def backtest_strategy(self, symbol: str, start_date: str, end_date: str) -> Dict[str, Any]:
+        """
+        Backtest a simple trading strategy
+        """
+        try:
+            # Get historical data
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(start=start_date, end=end_date)
+            
+            if hist.empty:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No data found for stock {symbol} in specified date range"
+                )
+            
+            # Calculate indicators
+            hist['SMA_20'] = hist['Close'].rolling(window=20).mean()
+            hist['SMA_50'] = hist['Close'].rolling(window=50).mean()
+            
+            # Generate signals (buy when SMA_20 crosses above SMA_50, sell when crosses below)
+            hist['Signal'] = 0
+            hist.loc[hist['SMA_20'] > hist['SMA_50'], 'Signal'] = 1
+            hist['Position'] = hist['Signal'].diff()
+            
+            # Calculate returns
+            hist['Market_Return'] = hist['Close'].pct_change()
+            hist['Strategy_Return'] = hist['Market_Return'] * hist['Signal'].shift(1)
+            
+            # Calculate cumulative returns
+            hist['Cum_Market_Return'] = (1 + hist['Market_Return']).cumprod() - 1
+            hist['Cum_Strategy_Return'] = (1 + hist['Strategy_Return']).cumprod() - 1
+            
+            # Count signals
+            buy_signals = hist[hist['Position'] == 1].shape[0]
+            sell_signals = hist[hist['Position'] == -1].shape[0]
+            
+            # Format the results
+            backtest_results = {
+                "symbol": symbol,
+                "start_date": start_date,
+                "end_date": end_date,
+                "market_return": round(hist['Cum_Market_Return'].iloc[-1] * 100, 2),
+                "strategy_return": round(hist['Cum_Strategy_Return'].iloc[-1] * 100, 2),
+                "signals": {
+                    "buy": buy_signals,
+                    "sell": sell_signals
+                },
+                "historical_data": {
+                    "dates": hist.index.strftime('%Y-%m-%d').tolist(),
+                    "prices": hist['Close'].round(2).tolist(),
+                    "sma_20": hist['SMA_20'].round(2).fillna(None).tolist(),
+                    "sma_50": hist['SMA_50'].round(2).fillna(None).tolist(),
+                    "market_return": (hist['Cum_Market_Return'] * 100).round(2).tolist(),
+                    "strategy_return": (hist['Cum_Strategy_Return'] * 100).round(2).tolist(),
+                    "buy_signals": hist.index[hist['Position'] == 1].strftime('%Y-%m-%d').tolist(),
+                    "sell_signals": hist.index[hist['Position'] == -1].strftime('%Y-%m-%d').tolist(),
+                }
+            }
+            
+            return backtest_results
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error backtesting for stock {symbol}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to backtest strategy: {str(e)}"
+            )
+
+# Create a singleton instance
+stock_analyzer_service = StockAnalyzerService()

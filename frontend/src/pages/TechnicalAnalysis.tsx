@@ -107,7 +107,7 @@ const TechnicalAnalysis: React.FC = () => {
 
     try {
       setIsSearching(true);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/stock/search/${searchQuery}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/stock/search/${searchQuery}`);
       
       // Transform the response to match our StockInfo interface
       if (Array.isArray(response.data)) {

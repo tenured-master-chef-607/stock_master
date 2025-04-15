@@ -5,6 +5,13 @@ import os
 import logging
 import yfinance as yf
 from pathlib import Path
+import sys
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -323,4 +330,170 @@ def delete_stock():
             
     except Exception as e:
         print(f"删除股票失败: {str(e)}")
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
+
+# Secret key for JWT
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+
+def get_db():
+    db = SessionLocal()
+    try:
+        return db
+    finally:
+        db.close()
+
+def verify_password(plain_password, hashed_password):
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+def create_access_token(data, expires_delta=None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
+
+@stock_bp.route('/login', methods=['POST'])
+def login():
+    print("Login endpoint called!")
+    data = request.json
+    print(f"Received login data: {data}")
+    
+    if not data or not data.get('username') or not data.get('password'):
+        print("Missing username or password")
+        return jsonify({"error": "Username and password are required"}), 400
+    
+    try:
+        db = get_db()
+        user = db.query(User).filter(User.username == data['username']).first()
+        print(f"User found: {user is not None}")
+        
+        if not user:
+            print("User not found")
+            return jsonify({"error": "Invalid username or password"}), 401
+            
+        password_match = verify_password(data['password'], user.hashed_password)
+        print(f"Password match: {password_match}")
+        
+        if not password_match:
+            print("Password doesn't match")
+            return jsonify({"error": "Invalid username or password"}), 401
+        
+        access_token = create_access_token({"sub": user.username})
+        print(f"Generated token for user {user.username}")
+        
+        return jsonify({
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+    except Exception as e:
+        print(f"Error in login: {str(e)}")
+        return jsonify({"error": f"Login failed: {str(e)}"}), 500
+
+@stock_bp.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    
+    if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+        return jsonify({"error": "Username, email, and password are required"}), 400
+    
+    db = get_db()
+    
+    # Check if username or email already exists
+    existing_user = db.query(User).filter(
+        (User.username == data['username']) | (User.email == data['email'])
+    ).first()
+    
+    if existing_user:
+        if existing_user.username == data['username']:
+            return jsonify({"error": "Username already taken"}), 400
+        else:
+            return jsonify({"error": "Email already registered"}), 400
+    
+    # Create new user
+    hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    new_user = User(
+        username=data['username'],
+        email=data['email'],
+        hashed_password=hashed_password,
+        is_active=True,
+        is_superuser=False
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return jsonify({
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email,
+        "is_active": new_user.is_active,
+        "is_superuser": new_user.is_superuser
+    }), 201
+
+@stock_bp.route('/profile', methods=['GET'])
+def get_profile():
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"error": "Invalid or missing token"}), 401
+    
+    token = auth_header.split(' ')[1]
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+        
+        db = get_db()
+        user = db.query(User).filter(User.username == username).first()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser
+        })
+        
+    except jwt.PyJWTError:
+        return jsonify({"error": "Invalid token"}), 401 
+        
+        db = get_db()
+        user = db.query(User).filter(User.username == username).first()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser
+        })
+        
+    except jwt.PyJWTError:
+        return jsonify({"error": "Invalid token"}), 401 
+        
+        db = get_db()
+        user = db.query(User).filter(User.username == username).first()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser
+        })
+        
+    except jwt.PyJWTError:
+        return jsonify({"error": "Invalid token"}), 401 

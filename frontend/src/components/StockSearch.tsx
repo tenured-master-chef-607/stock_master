@@ -67,6 +67,23 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onSelect, style }) => 
   const [loading, setLoading] = useState(false);
   const [searchCache] = useState<Map<string, StockSuggestion[]>>(new Map());
   const { darkMode } = useContext(ThemeContext);
+  const [watchlistSymbols, setWatchlistSymbols] = useState<Set<string>>(new Set());
+
+  // Fetch the watchlist for comparison
+  const fetchWatchlist = async () => {
+    try {
+      const watchlistResponse = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`);
+      
+      if (watchlistResponse.ok) {
+        const watchlistData = await watchlistResponse.json();
+        setWatchlistSymbols(new Set(
+          watchlistData.map((item: { symbol: string }) => item.symbol)
+        ));
+      }
+    } catch (error) {
+      console.error('Error fetching watchlist:', error);
+    }
+  };
 
   // Handle adding a stock to the watchlist
   const handleAddStock = useCallback(async (symbol: string) => {
@@ -74,7 +91,7 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onSelect, style }) => 
       console.log('Starting to add stock:', symbol);
       
       // First check if the stock already exists in any group
-      const watchlistResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist`);
+      const watchlistResponse = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`);
       if (!watchlistResponse.ok) {
         throw new Error('Failed to get watchlist');
       }
@@ -100,7 +117,7 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onSelect, style }) => 
       
       console.log('Sending request body:', requestBody);
       
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist/add`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +222,7 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onSelect, style }) => 
 
       try {
         setLoading(true);
-        const url = `${process.env.REACT_APP_API_URL}/api/stock/search/${query}`;
+        const url = `${process.env.REACT_APP_API_URL}/stock/search/${query}`;
         console.log('Searching at URL:', url);
 
         const response = await fetch(url, {

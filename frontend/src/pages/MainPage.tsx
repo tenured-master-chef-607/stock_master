@@ -46,7 +46,7 @@ export const MainPage: React.FC = () => {
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/watchlist`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`, {
           credentials: 'include'
         });
         
@@ -140,7 +140,7 @@ export const MainPage: React.FC = () => {
       switch (lastOperation.type) {
         case 'ADD':
           // 撤回添加操作
-          fetch(`${process.env.REACT_APP_API_URL}/api/watchlist/remove`, {
+          fetch(`${process.env.REACT_APP_API_URL}/watchlist/remove`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export const MainPage: React.FC = () => {
           break;
         case 'DELETE':
           // 撤回删除操作
-          fetch(`${process.env.REACT_APP_API_URL}/api/watchlist/add`, {
+          fetch(`${process.env.REACT_APP_API_URL}/watchlist/add`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
