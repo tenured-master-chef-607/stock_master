@@ -40,7 +40,7 @@ def commit_repository(yaml_data):
 
 if __name__ == '__main__':
     while True:
-        sleep(86400) # Sleep for 24 hours
+        #sleep(86400) # Sleep for 24 hours
         if random() < 0.7:  # 65% probability to update the file
             for i in range(randint(1, 10)): # Randomly update the file 1-10 times
                 updated_yaml_data = update_file_to_commit()
